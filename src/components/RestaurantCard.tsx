@@ -1,7 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Star, Clock } from "lucide-react";
+import { Star, Clock, Heart } from "lucide-react";
 import { Restaurant } from "@/types";
+import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -9,6 +12,24 @@ interface RestaurantCardProps {
 }
 
 const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, index = 0 }) => {
+  const { user } = useAuth();
+  const { data: favorites } = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+
+  const isFavorite = favorites?.some(fav => fav.restaurant_id === restaurant.id) ?? false;
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      toast.error("Please sign in to add favorites");
+      return;
+    }
+    
+    toggleFavorite.mutate({ restaurantId: restaurant.id, isFavorite });
+  };
+
   return (
     <Link
       to={`/restaurant/${restaurant.id}`}
@@ -25,6 +46,19 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, index = 0 }
           />
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          
+          {/* Favorite Button */}
+          <button
+            onClick={handleToggleFavorite}
+            disabled={toggleFavorite.isPending}
+            className="absolute top-3 right-3 p-2 bg-card/90 backdrop-blur-sm rounded-full shadow-md hover:bg-card transition-colors z-10"
+          >
+            <Heart 
+              className={`w-4 h-4 transition-colors ${
+                isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"
+              }`} 
+            />
+          </button>
           
           {/* Discount Badge */}
           {restaurant.discount && (

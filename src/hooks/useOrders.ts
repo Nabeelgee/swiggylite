@@ -209,12 +209,20 @@ export const useCreateOrder = () => {
     }) => {
       if (!user) throw new Error("Not authenticated");
 
+      // Validate UUID format - if restaurantId is not a valid UUID, set to null
+      const isValidUUID = (str: string) => {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(str);
+      };
+
+      const validRestaurantId = isValidUUID(restaurantId) ? restaurantId : null;
+
       // Create order
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
           user_id: user.id,
-          restaurant_id: restaurantId,
+          restaurant_id: validRestaurantId,
           restaurant_name: restaurantName,
           total_amount: totalAmount,
           delivery_fee: deliveryFee,
@@ -229,10 +237,10 @@ export const useCreateOrder = () => {
 
       if (orderError) throw orderError;
 
-      // Create order items
+      // Create order items - only include menu_item_id if it's a valid UUID
       const orderItems = items.map((item) => ({
         order_id: order.id,
-        menu_item_id: item.menuItemId,
+        menu_item_id: isValidUUID(item.menuItemId) ? item.menuItemId : null,
         name: item.name,
         price: item.price,
         quantity: item.quantity,

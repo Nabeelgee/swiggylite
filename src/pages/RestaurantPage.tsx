@@ -1,30 +1,77 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Star, Clock, MapPin, Search } from "lucide-react";
-import { restaurants, menuItems } from "@/data/restaurants";
+import { ArrowLeft, Star, Clock, Heart, Search } from "lucide-react";
+import { useRestaurant, useMenuItems, MenuItem as DBMenuItem } from "@/hooks/useRestaurants";
+import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
+import { useAuth } from "@/context/AuthContext";
 import MenuItem from "@/components/MenuItem";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const RestaurantPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const restaurant = restaurants.find((r) => r.id === id);
-  const menu = menuItems[id || ""] || [];
+  const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const { data: restaurant, isLoading: restaurantLoading, error: restaurantError } = useRestaurant(id || "");
+  const { data: menuItems, isLoading: menuLoading } = useMenuItems(id || "");
+  const { data: favorites } = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+
+  const isFavorite = favorites?.some(fav => fav.restaurant_id === id) ?? false;
+
+  const handleToggleFavorite = () => {
+    if (!user) {
+      toast.error("Please sign in to add favorites");
+      return;
+    }
+    if (id) {
+      toggleFavorite.mutate({ restaurantId: id, isFavorite });
+    }
+  };
+
+  const filteredMenuItems = useMemo(() => {
+    if (!menuItems) return [];
+    if (!searchQuery.trim()) return menuItems;
+    
+    const query = searchQuery.toLowerCase();
+    return menuItems.filter(
+      item => 
+        item.name.toLowerCase().includes(query) ||
+        item.description?.toLowerCase().includes(query) ||
+        item.category.toLowerCase().includes(query)
+    );
+  }, [menuItems, searchQuery]);
 
   const categorizedMenu = useMemo(() => {
-    const categories: Record<string, typeof menu> = {};
-    menu.forEach((item) => {
+    const categories: Record<string, DBMenuItem[]> = {};
+    filteredMenuItems.forEach((item) => {
       if (!categories[item.category]) {
         categories[item.category] = [];
       }
       categories[item.category].push(item);
     });
     return categories;
-  }, [menu]);
+  }, [filteredMenuItems]);
 
-  if (!restaurant) {
+  if (restaurantLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-6">
+          <Skeleton className="h-64 w-full rounded-2xl mb-6" />
+          <Skeleton className="h-8 w-48 mb-4" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
+        </main>
+      </div>
+    );
+  }
+
+  if (restaurantError || !restaurant) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -53,11 +100,24 @@ const RestaurantPage: React.FC = () => {
         <div className="bg-card rounded-2xl swiggy-shadow overflow-hidden animate-fade-in">
           <div className="relative h-48 sm:h-64 md:h-80">
             <img
-              src={restaurant.image}
+              src={restaurant.image_url || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"}
               alt={restaurant.name}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            
+            {/* Favorite Button */}
+            <button
+              onClick={handleToggleFavorite}
+              disabled={toggleFavorite.isPending}
+              className="absolute top-4 right-4 p-3 bg-card/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-card transition-colors"
+            >
+              <Heart 
+                className={`w-6 h-6 transition-colors ${
+                  isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                }`} 
+              />
+            </button>
             
             {/* Restaurant Info Overlay */}
             <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -65,7 +125,7 @@ const RestaurantPage: React.FC = () => {
                 {restaurant.name}
               </h1>
               <p className="text-white/80 text-sm sm:text-base">
-                {restaurant.cuisines.join(", ")}
+                {restaurant.cuisines?.join(", ")}
               </p>
             </div>
           </div>
@@ -83,13 +143,13 @@ const RestaurantPage: React.FC = () => {
 
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="w-5 h-5" />
-              <span>{restaurant.deliveryTime}</span>
+              <span>{restaurant.delivery_time}</span>
             </div>
 
             <Separator orientation="vertical" className="h-6" />
 
             <div className="flex items-center gap-2 text-muted-foreground">
-              <span>{restaurant.costForTwo}</span>
+              <span>{restaurant.cost_for_two}</span>
             </div>
 
             {restaurant.discount && (
@@ -107,6 +167,8 @@ const RestaurantPage: React.FC = () => {
               <input
                 type="text"
                 placeholder="Search for dishes"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-secondary rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
               />
             </div>
@@ -115,31 +177,54 @@ const RestaurantPage: React.FC = () => {
 
         {/* Menu */}
         <div className="mt-8">
-          {Object.entries(categorizedMenu).map(([category, items], index) => (
-            <div
-              key={category}
-              className="mb-8 animate-fade-in"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <h2 className="text-lg sm:text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                {category}
-                <span className="text-sm font-normal text-muted-foreground">
-                  ({items.length} items)
-                </span>
-              </h2>
-              
-              <div className="bg-card rounded-2xl swiggy-shadow p-4 sm:p-6">
-                {items.map((item) => (
-                  <MenuItem
-                    key={item.id}
-                    item={item}
-                    restaurantId={restaurant.id}
-                    restaurantName={restaurant.name}
-                  />
-                ))}
-              </div>
+          {menuLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+              ))}
             </div>
-          ))}
+          ) : Object.keys(categorizedMenu).length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                {searchQuery ? "No dishes found matching your search" : "No menu items available"}
+              </p>
+            </div>
+          ) : (
+            Object.entries(categorizedMenu).map(([category, items], index) => (
+              <div
+                key={category}
+                className="mb-8 animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <h2 className="text-lg sm:text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  {category}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({items.length} items)
+                  </span>
+                </h2>
+                
+                <div className="bg-card rounded-2xl swiggy-shadow p-4 sm:p-6">
+                  {items.map((item) => (
+                    <MenuItem
+                      key={item.id}
+                      item={{
+                        id: item.id,
+                        name: item.name,
+                        description: item.description || "",
+                        price: item.price,
+                        image: item.image_url || undefined,
+                        isVeg: item.is_veg ?? true,
+                        isBestseller: item.is_bestseller ?? false,
+                        category: item.category,
+                      }}
+                      restaurantId={restaurant.id}
+                      restaurantName={restaurant.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </main>
 
