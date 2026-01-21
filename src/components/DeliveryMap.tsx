@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -31,13 +31,18 @@ interface MapUpdaterProps {
   zoom: number;
 }
 
-const MapUpdater: React.FC<MapUpdaterProps> = ({ center, zoom }) => {
+// Separate component for map updates that uses the map context
+function MapUpdater({ center, zoom }: MapUpdaterProps) {
   const map = useMap();
-  React.useEffect(() => {
-    map.setView(center, zoom);
+  
+  useEffect(() => {
+    if (map) {
+      map.setView(center, zoom);
+    }
   }, [center, zoom, map]);
+  
   return null;
-};
+}
 
 interface DeliveryMapProps {
   restaurantLocation?: { lat: number; lng: number };
@@ -56,6 +61,14 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({
   deliveryAddress = "Delivery Address",
   partnerName = "Delivery Partner",
 }) => {
+  // Track if component is mounted to avoid issues with conditional rendering
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
   // Default to Bangalore coordinates
   const defaultCenter: [number, number] = [12.9352, 77.6245];
   
@@ -87,6 +100,15 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({
     }
     return path;
   }, [restaurantLocation, deliveryLocation, deliveryPartnerLocation]);
+
+  // Don't render until mounted to avoid SSR/hydration issues
+  if (!isMounted) {
+    return (
+      <div className="relative w-full h-[300px] sm:h-[400px] rounded-2xl overflow-hidden shadow-lg bg-secondary flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-[300px] sm:h-[400px] rounded-2xl overflow-hidden shadow-lg">
