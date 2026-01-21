@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, MapPin, ChevronDown, ShoppingBag, User, Menu } from "lucide-react";
+import { Search, MapPin, ChevronDown, ShoppingBag, User, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -17,11 +17,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Cart from "./Cart";
+import GlobalSearch from "./GlobalSearch";
 
 const Header: React.FC = () => {
   const { getTotalItems } = useCart();
   const { user, profile, signOut } = useAuth();
   const [location] = useState("Koramangala, Bangalore");
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const totalItems = getTotalItems();
 
   return (
@@ -44,19 +46,17 @@ const Header: React.FC = () => {
           </button>
 
           <div className="flex-1 max-w-md hidden lg:block">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search for restaurants and food"
-                className="w-full pl-10 pr-4 py-2.5 bg-secondary rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
-              />
-            </div>
+            <GlobalSearch />
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="icon" className="lg:hidden">
-              <Search className="w-5 h-5" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="lg:hidden"
+              onClick={() => setShowMobileSearch(!showMobileSearch)}
+            >
+              {showMobileSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
             </Button>
 
             {user ? (
@@ -113,6 +113,13 @@ const Header: React.FC = () => {
             </Button>
           </div>
         </div>
+
+        {/* Mobile Search */}
+        {showMobileSearch && (
+          <div className="lg:hidden px-4 pb-3 animate-fade-in">
+            <GlobalSearch placeholder="Search restaurants, cuisines, dishes..." />
+          </div>
+        )}
       </div>
     </header>
   );
