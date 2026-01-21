@@ -55,6 +55,9 @@ const CheckoutPage: React.FC = () => {
       return;
     }
 
+    // Prevent double-clicks
+    if (isPlacing) return;
+
     setIsPlacing(true);
 
     try {
@@ -76,11 +79,15 @@ const CheckoutPage: React.FC = () => {
         specialInstructions: instructions || undefined,
       });
 
+      // Clear cart first, then navigate
       clearCart();
-      navigate(`/order/${order.id}`);
+      
+      // Small delay to ensure state updates complete before navigation
+      setTimeout(() => {
+        navigate(`/order/${order.id}`, { replace: true });
+      }, 100);
     } catch (error) {
       // Error is already handled in the hook
-    } finally {
       setIsPlacing(false);
     }
   };
