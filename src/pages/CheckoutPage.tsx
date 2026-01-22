@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Plus, Trash2, Check } from "lucide-react";
+import { ArrowLeft, MapPin, Check } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useCreateOrder } from "@/hooks/useOrders";
 import Header from "@/components/Header";
+import LocationPicker from "@/components/LocationPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +19,7 @@ const CheckoutPage: React.FC = () => {
   const createOrder = useCreateOrder();
 
   const [address, setAddress] = useState(profile?.default_address || "");
+  const [deliveryCoords, setDeliveryCoords] = useState({ lat: 12.938, lng: 77.629 });
   const [instructions, setInstructions] = useState("");
   const [isPlacing, setIsPlacing] = useState(false);
 
@@ -74,17 +76,17 @@ const CheckoutPage: React.FC = () => {
         totalAmount: totalPrice,
         deliveryFee,
         deliveryAddress: address,
-        deliveryLatitude: 12.938,
-        deliveryLongitude: 77.629,
+        deliveryLatitude: deliveryCoords.lat,
+        deliveryLongitude: deliveryCoords.lng,
         specialInstructions: instructions || undefined,
       });
 
-      // Clear cart first, then navigate
+      // Clear cart first, then navigate to confirmation page
       clearCart();
       
-      // Small delay to ensure state updates complete before navigation
+      // Navigate to confirmation page
       setTimeout(() => {
-        navigate(`/order/${order.id}`, { replace: true });
+        navigate(`/order/${order.id}/confirmation`, { replace: true });
       }, 100);
     } catch (error) {
       // Error is already handled in the hook
@@ -129,19 +131,28 @@ const CheckoutPage: React.FC = () => {
                 </h2>
               </div>
 
-              <Input
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Enter your full delivery address"
-                className="mb-3"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Enter your full delivery address"
+                  className="flex-1"
+                />
+                <LocationPicker
+                  onLocationSelect={(loc) => {
+                    setAddress(loc.address);
+                    setDeliveryCoords({ lat: loc.lat, lng: loc.lng });
+                  }}
+                  initialLocation={deliveryCoords}
+                />
+              </div>
 
               {profile?.default_address && address !== profile.default_address && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setAddress(profile.default_address || "")}
-                  className="text-primary"
+                  className="text-primary mt-2"
                 >
                   <MapPin className="w-4 h-4 mr-1" />
                   Use saved address
