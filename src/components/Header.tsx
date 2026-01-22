@@ -76,6 +76,9 @@ const Header: React.FC = () => {
                   <DropdownMenuItem asChild>
                     <Link to="/orders" className="cursor-pointer">📦 My Orders</Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="cursor-pointer">⚙️ Admin Panel</Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()} className="text-destructive cursor-pointer">
                     🚪 Sign Out
