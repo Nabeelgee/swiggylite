@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Star, Clock, MapPin, CheckCircle2, Circle, Package, Truck, Home } from "lucide-react";
-import { useOrder, useOrderItems, useOrderTracking } from "@/hooks/useOrders";
+import { ArrowLeft, Phone, Star, Clock, MapPin, Package, Truck, Home, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { useOrder, useOrderItems } from "@/hooks/useOrders";
+import { useLiveOrderTracking } from "@/hooks/useLiveOrderTracking";
+import { useRouteETA } from "@/hooks/useRouteETA";
 import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import DeliveryMap from "@/components/DeliveryMap";
@@ -14,7 +16,7 @@ type OrderStatus = Database["public"]["Enums"]["order_status"];
 
 const statusSteps: { status: OrderStatus; label: string; icon: React.ElementType }[] = [
   { status: "placed", label: "Order Placed", icon: Package },
-  { status: "confirmed", label: "Confirmed", icon: CheckCircle2 },
+  { status: "confirmed", label: "Confirmed", icon: Package },
   { status: "preparing", label: "Preparing", icon: Package },
   { status: "picked_up", label: "Picked Up", icon: Truck },
   { status: "on_the_way", label: "On the Way", icon: Truck },
@@ -32,10 +34,24 @@ const OrderTrackingPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const { data: order, isLoading: orderLoading } = useOrder(orderId || "");
   const { data: orderItems } = useOrderItems(orderId || "");
-  const { tracking, partner } = useOrderTracking(orderId || "");
+  
+  // Live tracking with real-time updates
+  const { tracking, partner, partnerLocation, isConnected, lastUpdate } = useLiveOrderTracking(orderId || "");
 
-  // Simulated delivery partner movement
+  // Simulated delivery partner movement when no real location
   const [simulatedPartnerLocation, setSimulatedPartnerLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Delivery location
+  const deliveryLocation = order ? {
+    lat: order.delivery_latitude || 12.9380,
+    lng: order.delivery_longitude || 77.6290,
+  } : null;
+
+  // Use real partner location or simulated
+  const effectivePartnerLocation = partnerLocation || simulatedPartnerLocation;
+
+  // ETA calculation using OSRM routing
+  const { eta, isLoading: etaLoading } = useRouteETA(effectivePartnerLocation, deliveryLocation);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,9 +59,9 @@ const OrderTrackingPage: React.FC = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Simulate delivery partner movement
+  // Simulate delivery partner movement when no real tracking
   useEffect(() => {
-    if (order && (order.status === "picked_up" || order.status === "on_the_way")) {
+    if (order && !partnerLocation && (order.status === "picked_up" || order.status === "on_the_way")) {
       const restaurantLat = 12.9352;
       const restaurantLng = 77.6245;
       const deliveryLat = order.delivery_latitude || 12.9380;
@@ -53,7 +69,7 @@ const OrderTrackingPage: React.FC = () => {
 
       let progress = 0;
       const interval = setInterval(() => {
-        progress += 0.1;
+        progress += 0.05; // Slower for smoother animation
         if (progress >= 1) {
           clearInterval(interval);
           return;
@@ -62,11 +78,11 @@ const OrderTrackingPage: React.FC = () => {
         const currentLat = restaurantLat + (deliveryLat - restaurantLat) * progress;
         const currentLng = restaurantLng + (deliveryLng - restaurantLng) * progress;
         setSimulatedPartnerLocation({ lat: currentLat, lng: currentLng });
-      }, 3000);
+      }, 2000);
 
       return () => clearInterval(interval);
     }
-  }, [order]);
+  }, [order, partnerLocation]);
 
   if (authLoading || orderLoading) {
     return (
@@ -99,14 +115,42 @@ const OrderTrackingPage: React.FC = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-6">
-        {/* Back Button */}
-        <Link
-          to="/orders"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Back to orders</span>
-        </Link>
+        {/* Back Button & Connection Status */}
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            to="/orders"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back to orders</span>
+          </Link>
+
+          {/* Live connection indicator */}
+          {!isDelivered && !isCancelled && (
+            <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full ${
+              isConnected 
+                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
+                : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+            }`}>
+              {isConnected ? (
+                <>
+                  <Wifi className="w-3 h-3" />
+                  <span>Live</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-3 h-3" />
+                  <span>Connecting...</span>
+                </>
+              )}
+              {lastUpdate && (
+                <span className="opacity-70">
+                  • {format(lastUpdate, "h:mm:ss a")}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Map & Status */}
@@ -114,22 +158,25 @@ const OrderTrackingPage: React.FC = () => {
             {/* Map */}
             {!isDelivered && !isCancelled && (
               <div className="animate-fade-in">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Live Tracking</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-foreground">Live Tracking</h2>
+                  {eta && (
+                    <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                      <Clock className="w-4 h-4" />
+                      <span>ETA: {eta.duration}</span>
+                      <span className="text-muted-foreground">({eta.distance})</span>
+                    </div>
+                  )}
+                </div>
                 <DeliveryMap
                   restaurantLocation={{ lat: 12.9352, lng: 77.6245 }}
-                  deliveryLocation={{
-                    lat: order.delivery_latitude || 12.9380,
-                    lng: order.delivery_longitude || 77.6290,
-                  }}
-                  deliveryPartnerLocation={
-                    simulatedPartnerLocation ||
-                    (partner?.current_latitude && partner?.current_longitude
-                      ? { lat: partner.current_latitude, lng: partner.current_longitude }
-                      : undefined)
-                  }
+                  deliveryLocation={deliveryLocation || undefined}
+                  deliveryPartnerLocation={effectivePartnerLocation || undefined}
                   restaurantName={order.restaurant_name}
                   deliveryAddress={order.delivery_address}
                   partnerName={partner?.name}
+                  orderStatus={order.status}
+                  eta={eta}
                 />
               </div>
             )}
@@ -157,17 +204,17 @@ const OrderTrackingPage: React.FC = () => {
                         {/* Line */}
                         <div className="flex flex-col items-center">
                           <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                               isCompleted
                                 ? "bg-swiggy-green text-white"
                                 : "bg-secondary text-muted-foreground"
-                            } ${isCurrent ? "ring-4 ring-swiggy-green/30" : ""}`}
+                            } ${isCurrent ? "ring-4 ring-swiggy-green/30 animate-pulse" : ""}`}
                           >
                             <Icon className="w-5 h-5" />
                           </div>
                           {index < statusSteps.length - 1 && (
                             <div
-                              className={`w-0.5 flex-1 mt-2 ${
+                              className={`w-0.5 flex-1 mt-2 transition-colors duration-300 ${
                                 index < currentStatusIndex
                                   ? "bg-swiggy-green"
                                   : "bg-border"
@@ -179,15 +226,20 @@ const OrderTrackingPage: React.FC = () => {
                         {/* Content */}
                         <div className="flex-1 pt-1.5">
                           <p
-                            className={`font-medium ${
+                            className={`font-medium transition-colors ${
                               isCompleted ? "text-foreground" : "text-muted-foreground"
                             }`}
                           >
                             {step.label}
                           </p>
                           {isCurrent && tracking?.status_message && (
-                            <p className="text-sm text-muted-foreground mt-1">
+                            <p className="text-sm text-muted-foreground mt-1 animate-fade-in">
                               {tracking.status_message}
+                            </p>
+                          )}
+                          {isCurrent && eta && (step.status === "picked_up" || step.status === "on_the_way") && (
+                            <p className="text-sm text-primary font-medium mt-1 animate-fade-in">
+                              Arriving in ~{eta.duration}
                             </p>
                           )}
                         </div>
@@ -208,8 +260,11 @@ const OrderTrackingPage: React.FC = () => {
                   Delivery Partner
                 </h2>
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-swiggy-orange-light rounded-full flex items-center justify-center text-2xl">
+                  <div className="w-14 h-14 bg-swiggy-orange-light rounded-full flex items-center justify-center text-2xl relative">
                     🛵
+                    {isConnected && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-foreground">{partner.name}</p>
@@ -221,6 +276,12 @@ const OrderTrackingPage: React.FC = () => {
                       <span>•</span>
                       <span>{partner.vehicle_number}</span>
                     </div>
+                    {effectivePartnerLocation && eta && (
+                      <div className="flex items-center gap-1 text-xs text-primary mt-1">
+                        <RefreshCw className={`w-3 h-3 ${etaLoading ? "animate-spin" : ""}`} />
+                        <span>{eta.distance} away • {eta.duration}</span>
+                      </div>
+                    )}
                   </div>
                   <a href={`tel:${partner.phone}`}>
                     <Button size="icon" variant="outline" className="rounded-full">
@@ -254,8 +315,8 @@ const OrderTrackingPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
-                    <MapPin className="w-4 h-4 text-blue-600" />
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mt-0.5">
+                    <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground">Delivery Address</p>
@@ -265,13 +326,18 @@ const OrderTrackingPage: React.FC = () => {
 
                 {order.estimated_delivery_time && !isDelivered && (
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-                      <Clock className="w-4 h-4 text-green-600" />
+                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mt-0.5">
+                      <Clock className="w-4 h-4 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                       <p className="font-medium text-foreground">Estimated Delivery</p>
                       <p className="text-sm text-muted-foreground">
                         {format(new Date(order.estimated_delivery_time), "h:mm a")}
+                        {eta && (
+                          <span className="text-primary font-medium ml-2">
+                            (Dynamic: ~{eta.duration})
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
