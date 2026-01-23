@@ -302,12 +302,15 @@ const AdminMenuItems: React.FC = () => {
             className="pl-10"
           />
         </div>
-        <Select value={selectedRestaurant} onValueChange={setSelectedRestaurant}>
+        <Select 
+          value={selectedRestaurant || "all"} 
+          onValueChange={(value) => setSelectedRestaurant(value === "all" ? "" : value)}
+        >
           <SelectTrigger className="w-full sm:w-[250px]">
             <SelectValue placeholder="All Restaurants" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Restaurants</SelectItem>
+            <SelectItem value="all">All Restaurants</SelectItem>
             {restaurants?.map((r) => (
               <SelectItem key={r.id} value={r.id}>
                 {r.name}
