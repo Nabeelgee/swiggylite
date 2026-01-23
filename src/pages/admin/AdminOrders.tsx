@@ -81,12 +81,15 @@ const AdminOrders: React.FC = () => {
             className="pl-10"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select 
+          value={statusFilter || "all"} 
+          onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}
+        >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             {ORDER_STATUSES.map((status) => (
               <SelectItem key={status.value} value={status.value}>
                 {status.label}
