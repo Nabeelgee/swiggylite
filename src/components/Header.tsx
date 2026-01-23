@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, MapPin, ChevronDown, ShoppingBag, User, Menu, X } from "lucide-react";
+import { Search, MapPin, ChevronDown, ShoppingBag, User, Menu, X, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -75,6 +75,9 @@ const Header: React.FC = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/orders" className="cursor-pointer">📦 My Orders</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/favorites" className="cursor-pointer">❤️ My Favorites</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/admin" className="cursor-pointer">⚙️ Admin Panel</Link>
