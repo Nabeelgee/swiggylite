@@ -21,6 +21,7 @@ const navItems = [
   { icon: Store, label: "Restaurants", path: "/admin/restaurants" },
   { icon: UtensilsCrossed, label: "Menu Items", path: "/admin/menu" },
   { icon: Package, label: "Orders", path: "/admin/orders" },
+  { icon: Users, label: "Simulator", path: "/admin/simulator" },
 ];
 
 const AdminLayout: React.FC = () => {

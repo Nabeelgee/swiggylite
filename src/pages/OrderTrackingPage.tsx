@@ -7,6 +7,7 @@ import { useRouteETA } from "@/hooks/useRouteETA";
 import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import DeliveryMap from "@/components/DeliveryMap";
+import TrackingDebugPanel from "@/components/TrackingDebugPanel";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
@@ -176,6 +177,16 @@ const OrderTrackingPage: React.FC = () => {
                   deliveryAddress={order.delivery_address}
                   partnerName={partner?.name}
                   orderStatus={order.status}
+                  eta={eta}
+                />
+
+                {/* Admin Debug Panel */}
+                <TrackingDebugPanel
+                  tracking={tracking}
+                  partner={partner}
+                  partnerLocation={effectivePartnerLocation}
+                  isConnected={isConnected}
+                  lastUpdate={lastUpdate}
                   eta={eta}
                 />
               </div>
