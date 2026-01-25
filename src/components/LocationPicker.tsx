@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import { MapPin, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,20 @@ interface LocationPickerProps {
   trigger?: React.ReactNode;
 }
 
+/**
+ * Helper child to safely capture the Leaflet map instance.
+ * Avoid using `ref` on MapContainer which can crash (`render2 is not a function`) in some setups.
+ */
+const MapInstanceCapture: React.FC<{ onReady: (map: L.Map) => void }> = ({ onReady }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    onReady(map);
+  }, [map, onReady]);
+
+  return null;
+};
+
 const LocationPicker: React.FC<LocationPickerProps> = ({
   onLocationSelect,
   initialLocation,
@@ -41,6 +55,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [position, setPosition] = useState<[number, number]>(
     initialLocation ? [initialLocation.lat, initialLocation.lng] : [12.9716, 77.5946]
   );
@@ -52,10 +67,16 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     setIsMounted(true);
   }, []);
 
+  const handleMapReady = useCallback((map: L.Map) => {
+    mapRef.current = map;
+    setMapReady(true);
+  }, []);
+
   // Handle map click via ref instead of useMapEvents hook
   useEffect(() => {
+    if (!open) return;
+    if (!mapReady || !mapRef.current) return;
     const map = mapRef.current;
-    if (!map) return;
 
     const handleClick = (e: L.LeafletMouseEvent) => {
       const { lat, lng } = e.latlng;
@@ -68,21 +89,14 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     return () => {
       map.off("click", handleClick);
     };
-  }, [isMounted]);
+  }, [isMounted, mapReady, open]);
 
   // Recenter map when position changes via ref instead of useMap hook
   useEffect(() => {
-    if (mapRef.current) {
+    if (mapReady && mapRef.current) {
       mapRef.current.setView(position, 15);
     }
-  }, [position]);
-
-  // Callback to set map ref when container is ready
-  const setMapRefCallback = useCallback((map: L.Map | null) => {
-    if (map) {
-      mapRef.current = map;
-    }
-  }, []);
+  }, [position, mapReady]);
 
   const getCurrentLocation = () => {
     setIsLocating(true);
@@ -158,12 +172,12 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                 zoom={15}
                 style={{ height: "100%", width: "100%" }}
                 zoomControl={true}
-                ref={setMapRefCallback}
               >
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
+                <MapInstanceCapture onReady={handleMapReady} />
                 <Marker position={position} icon={customIcon} />
               </MapContainer>
             )}
