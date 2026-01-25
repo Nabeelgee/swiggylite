@@ -14,6 +14,7 @@ import OrderTrackingPage from "./pages/OrderTrackingPage";
 import OrderConfirmationPage from "./pages/OrderConfirmationPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import FavoritesPage from "./pages/FavoritesPage";
+import PartnerDashboard from "./pages/PartnerDashboard";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/order/:orderId/confirmation" element={<OrderConfirmationPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/favorites" element={<FavoritesPage />} />
+              <Route path="/partner" element={<PartnerDashboard />} />
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="restaurants" element={<AdminRestaurants />} />
