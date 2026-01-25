@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Database } from "@/integrations/supabase/types";
@@ -86,6 +86,20 @@ interface DeliveryMapProps {
   eta?: { distance: string; duration: string } | null;
 }
 
+/**
+ * Helper child that safely captures the Leaflet map instance.
+ * Using `ref` on MapContainer has been known to trigger `render2` crashes in some setups.
+ */
+const MapInstanceCapture: React.FC<{ onReady: (map: L.Map) => void }> = ({ onReady }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    onReady(map);
+  }, [map, onReady]);
+
+  return null;
+};
+
 const DeliveryMap: React.FC<DeliveryMapProps> = ({
   restaurantLocation,
   deliveryLocation,
@@ -97,6 +111,7 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({
   eta,
 }) => {
   const [isMounted, setIsMounted] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   const [animatedPosition, setAnimatedPosition] = useState(deliveryPartnerLocation);
   const previousPositionRef = useRef(deliveryPartnerLocation);
@@ -110,6 +125,11 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
+  }, []);
+
+  const handleMapReady = useCallback((map: L.Map) => {
+    mapRef.current = map;
+    setMapReady(true);
   }, []);
 
   // Smooth position animation with reduced-motion support
@@ -193,7 +213,8 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({
 
   // Update map view when center changes (using ref instead of useMap)
   useEffect(() => {
-    if (mapRef.current && animatedPosition) {
+    if (!mapReady || !mapRef.current || !animatedPosition) return;
+
       const shouldAnimate = !prefersReducedMotion();
       if (shouldAnimate) {
         mapRef.current.panTo([animatedPosition.lat, animatedPosition.lng], {
@@ -203,19 +224,11 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({
       } else {
         mapRef.current.setView([animatedPosition.lat, animatedPosition.lng], mapRef.current.getZoom());
       }
-    }
-  }, [animatedPosition]);
+  }, [animatedPosition, mapReady]);
 
   // Get theme based on status
   const theme = getMapTheme(orderStatus);
   const deliveryIcon = getDeliveryIcon(orderStatus);
-
-  // Callback to set map ref when container is ready
-  const setMapRef = useCallback((map: L.Map | null) => {
-    if (map) {
-      mapRef.current = map;
-    }
-  }, []);
 
   // Don't render until mounted to avoid SSR/hydration issues
   if (!isMounted) {
@@ -234,12 +247,13 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({
         scrollWheelZoom={false}
         className="w-full h-full z-0"
         style={{ background: "#f5f5f5" }}
-        ref={setMapRef}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        <MapInstanceCapture onReady={handleMapReady} />
 
         {/* Route line with status-based styling */}
         {routePath.length >= 2 && (
