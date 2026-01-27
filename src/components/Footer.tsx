@@ -1,9 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-
 const Footer: React.FC = () => {
-  return (
-    <footer className="bg-foreground text-card py-12">
+  return <footer className="bg-foreground text-card py-12">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Company */}
@@ -38,17 +36,7 @@ const Footer: React.FC = () => {
           </div>
 
           {/* App Links */}
-          <div>
-            <h4 className="font-bold text-lg mb-4">Download App</h4>
-            <div className="space-y-3">
-              <button className="w-full bg-card/10 hover:bg-card/20 text-card py-2 px-4 rounded-lg text-sm transition-colors">
-                📱 App Store
-              </button>
-              <button className="w-full bg-card/10 hover:bg-card/20 text-card py-2 px-4 rounded-lg text-sm transition-colors">
-                🤖 Play Store
-              </button>
-            </div>
-          </div>
+          
         </div>
 
         {/* Bottom */}
@@ -64,8 +52,6 @@ const Footer: React.FC = () => {
           </p>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
