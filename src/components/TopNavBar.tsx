@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, User, Clock, MapPin, ChevronDown, Heart, Menu, X, ShoppingBag, Settings } from "lucide-react";
+import { Home, Search, User, Clock, Heart, ShoppingBag, Settings, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { cn } from "@/lib/utils";
@@ -27,8 +27,8 @@ const TopNavBar: React.FC = () => {
   } = useCart();
   const [scrolled, setScrolled] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const totalItems = getTotalItems();
+  
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -36,6 +36,7 @@ const TopNavBar: React.FC = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+  
   const navItems: NavItem[] = [{
     icon: Home,
     label: "Home",
@@ -54,6 +55,7 @@ const TopNavBar: React.FC = () => {
   const hiddenPaths = ["/auth", "/admin"];
   const shouldHide = hiddenPaths.some(path => location.pathname.startsWith(path));
   if (shouldHide) return null;
+  
   return <>
       <nav className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300", scrolled ? "bg-card/80 backdrop-blur-xl border-b border-border/50 shadow-lg" : "bg-gradient-to-b from-background to-transparent backdrop-blur-sm")}>
         <div className="container mx-auto px-4">
@@ -66,9 +68,6 @@ const TopNavBar: React.FC = () => {
               </span>
             </Link>
 
-            {/* Location (Desktop) */}
-            
-
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-1">
               {navItems.map(item => {
@@ -80,17 +79,17 @@ const TopNavBar: React.FC = () => {
             })}
             </div>
 
-            {/* Right Actions */}
-            <div className="flex items-center gap-2">
+            {/* Right Actions - Desktop Only */}
+            <div className="hidden md:flex items-center gap-2">
               {/* Search Button */}
               <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setShowSearch(!showSearch)}>
                 {showSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
               </Button>
 
-              {/* Cart (Desktop) */}
+              {/* Cart */}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="hidden md:flex rounded-full relative">
+                  <Button variant="ghost" size="icon" className="rounded-full relative">
                     <ShoppingBag className="w-5 h-5" />
                     {totalItems > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center animate-scale-in">
                         {totalItems > 9 ? "9+" : totalItems}
@@ -102,10 +101,10 @@ const TopNavBar: React.FC = () => {
                 </SheetContent>
               </Sheet>
 
-              {/* User Dropdown (Desktop) */}
+              {/* User Dropdown */}
               {user ? <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="hidden md:flex rounded-full">
+                    <Button variant="ghost" size="icon" className="rounded-full">
                       {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-8 h-8 rounded-full object-cover" /> : <User className="w-5 h-5" />}
                     </Button>
                   </DropdownMenuTrigger>
@@ -140,47 +139,17 @@ const TopNavBar: React.FC = () => {
                       🚪 Sign Out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
-                </DropdownMenu> : <Link to="/auth" className="hidden md:block">
+                </DropdownMenu> : <Link to="/auth">
                   <Button variant="ghost" size="icon" className="rounded-full">
                     <User className="w-5 h-5" />
                   </Button>
                 </Link>}
-
-              {/* Mobile: Simple User Icon */}
-              <Link to={user ? "/profile" : "/auth"} className="md:hidden">
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  {user && profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-8 h-8 rounded-full object-cover" /> : <User className="w-5 h-5" />}
-                </Button>
-              </Link>
-
-              {/* Mobile Menu Toggle */}
-              <Button variant="ghost" size="icon" className="md:hidden rounded-full" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </Button>
             </div>
           </div>
 
-          {/* Search Bar (Expandable) */}
-          {showSearch && <div className="pb-4 animate-fade-in">
+          {/* Search Bar (Expandable - Desktop) */}
+          {showSearch && <div className="pb-4 animate-fade-in hidden md:block">
               <GlobalSearch placeholder="Search restaurants, cuisines, dishes..." />
-            </div>}
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && <div className="md:hidden pb-4 animate-fade-in">
-              <div className="bg-card/90 backdrop-blur-xl rounded-2xl p-2 border border-border/50 shadow-xl">
-                {/* Location */}
-                
-                
-                <div className="h-px bg-border/50 my-1" />
-
-                {navItems.map(item => {
-              const isActive = item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
-              return <Link key={item.label} to={item.path} onClick={() => setMobileMenuOpen(false)} className={cn("flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200", isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-secondary/50")}>
-                      <item.icon className="w-5 h-5" />
-                      <span className="font-medium">{item.label}</span>
-                    </Link>;
-            })}
-              </div>
             </div>}
         </div>
       </nav>
