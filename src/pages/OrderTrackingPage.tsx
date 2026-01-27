@@ -5,6 +5,7 @@ import { useOrder, useOrderItems } from "@/hooks/useOrders";
 import { useLiveOrderTracking } from "@/hooks/useLiveOrderTracking";
 import { useRouteETA } from "@/hooks/useRouteETA";
 import { useAuth } from "@/context/AuthContext";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import Header from "@/components/Header";
 import MockMapWithTiles from "@/components/MockMapWithTiles";
 import TrackingDebugPanel from "@/components/TrackingDebugPanel";
@@ -38,6 +39,9 @@ const OrderTrackingPage: React.FC = () => {
   
   // Live tracking with real-time updates
   const { tracking, partner, partnerLocation, isConnected, lastUpdate } = useLiveOrderTracking(orderId || "");
+  
+  // Check if user is admin (for debug panel)
+  const { data: isAdmin } = useIsAdmin();
 
   // Simulated delivery partner movement when no real location
   const [simulatedPartnerLocation, setSimulatedPartnerLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -181,15 +185,17 @@ const OrderTrackingPage: React.FC = () => {
                   zoom={15}
                 />
 
-                {/* Admin Debug Panel */}
-                <TrackingDebugPanel
-                  tracking={tracking}
-                  partner={partner}
-                  partnerLocation={effectivePartnerLocation}
-                  isConnected={isConnected}
-                  lastUpdate={lastUpdate}
-                  eta={eta}
-                />
+                {/* Admin Debug Panel - only visible to admins */}
+                {isAdmin && (
+                  <TrackingDebugPanel
+                    tracking={tracking}
+                    partner={partner}
+                    partnerLocation={effectivePartnerLocation}
+                    isConnected={isConnected}
+                    lastUpdate={lastUpdate}
+                    eta={eta}
+                  />
+                )}
               </div>
             )}
 
