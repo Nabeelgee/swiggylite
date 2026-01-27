@@ -45,6 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import ImageUpload from "@/components/ImageUpload";
 
 interface MenuItemForm {
   restaurant_id: string;
@@ -238,11 +239,10 @@ const AdminMenuItems: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
+                <Label>Dish Image</Label>
+                <ImageUpload
                   value={form.image_url}
-                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                  onChange={(url) => setForm({ ...form, image_url: url })}
                 />
               </div>
 

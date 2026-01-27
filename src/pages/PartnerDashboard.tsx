@@ -29,6 +29,7 @@ import { format } from "date-fns";
 import { useGPSTracking } from "@/hooks/useGPSTracking";
 import { useNavigationInstructions } from "@/hooks/useNavigationInstructions";
 import NavigationInstructions from "@/components/NavigationInstructions";
+import RouteOptimizer from "@/components/RouteOptimizer";
 import type { Database } from "@/integrations/supabase/types";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
@@ -625,6 +626,23 @@ const PartnerDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Route Optimizer - Show when multiple active orders */}
+        {activeOrders.length > 1 && gpsPosition && (
+          <RouteOptimizer
+            currentLocation={gpsPosition}
+            deliveryStops={activeOrders.map(tracking => ({
+              id: tracking.order_id,
+              name: tracking.orders.restaurant_name,
+              lat: tracking.orders.delivery_latitude || 12.938,
+              lng: tracking.orders.delivery_longitude || 77.629,
+              address: tracking.orders.delivery_address,
+            }))}
+            onRouteOptimized={(orderedStops) => {
+              toast.success(`Route optimized! Deliver in order: ${orderedStops.map(s => s.name).join(' → ')}`);
+            }}
+          />
+        )}
 
         {/* Active Orders */}
         <div>
