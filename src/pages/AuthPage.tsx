@@ -127,7 +127,7 @@ const AuthPage: React.FC = () => {
             <span className="text-primary text-5xl font-bold">S</span>
           </div>
           <h1 className="text-4xl font-bold text-white mb-4">
-            Welcome to Swiggy
+            Welcome to QuickBite
           </h1>
           <p className="text-white/80 text-lg max-w-md">
             Order food from your favorite restaurants and get it delivered to your doorstep in minutes.
@@ -142,9 +142,9 @@ const AuthPage: React.FC = () => {
           <div className="lg:hidden text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-2">
               <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-                <span className="text-primary-foreground text-2xl font-bold">S</span>
+                <span className="text-primary-foreground text-2xl font-bold">Q</span>
               </div>
-              <span className="text-2xl font-bold text-foreground">Swiggy</span>
+              <span className="text-2xl font-bold text-foreground">QuickBite</span>
             </Link>
           </div>
 

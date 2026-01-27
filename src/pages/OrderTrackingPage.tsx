@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Star, Clock, MapPin, Package, Truck, Home, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { ArrowLeft, Phone, Star, Clock, MapPin, Package, Truck, Home, Wifi, WifiOff, RefreshCw, Bell } from "lucide-react";
 import { useOrder, useOrderItems } from "@/hooks/useOrders";
 import { useLiveOrderTracking } from "@/hooks/useLiveOrderTracking";
 import { useRouteETA } from "@/hooks/useRouteETA";
+import { useETANotifications } from "@/hooks/useETANotifications";
 import { useAuth } from "@/context/AuthContext";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import MockMapWithTiles from "@/components/MockMapWithTiles";
@@ -56,6 +57,16 @@ const OrderTrackingPage: React.FC = () => {
 
   // ETA calculation using OSRM routing
   const { eta, isLoading: etaLoading } = useRouteETA(effectivePartnerLocation, deliveryLocation);
+
+  // ETA-based notifications for customer (always call hook, control via isEnabled)
+  const isDeliveryInProgress = !!(order && (order.status === "picked_up" || order.status === "on_the_way" || order.status === "arriving"));
+  useETANotifications({
+    orderId: orderId || "",
+    partnerLocation: effectivePartnerLocation,
+    deliveryLocation,
+    partnerName: partner?.name,
+    isEnabled: isDeliveryInProgress,
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {

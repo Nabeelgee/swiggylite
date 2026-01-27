@@ -55,12 +55,12 @@ const Footer: React.FC = () => {
         <div className="mt-12 pt-8 border-t border-card/20 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground text-sm font-bold">S</span>
+              <span className="text-primary-foreground text-sm font-bold">Q</span>
             </div>
-            <span className="font-bold">Swiggy</span>
+            <span className="font-bold">QuickBite</span>
           </div>
           <p className="text-sm text-card/60">
-            © 2024 Swiggy. All rights reserved.
+            © 2024 QuickBite. All rights reserved.
           </p>
         </div>
       </div>
