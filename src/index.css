@@ -48,6 +48,14 @@
     --quickbite-card-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.08);
     --quickbite-card-shadow-hover: 0 12px 40px -8px rgba(0, 0, 0, 0.15);
 
+    /* Swiggy compatibility colors */
+    --swiggy-orange: 24 95% 53%;
+    --swiggy-orange-light: 30 100% 96%;
+    --swiggy-green: 158 64% 42%;
+    --swiggy-green-light: 158 64% 94%;
+    --swiggy-card-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.08);
+    --swiggy-card-shadow-hover: 0 12px 40px -8px rgba(0, 0, 0, 0.15);
+
     --sidebar-background: 30 25% 98%;
     --sidebar-foreground: 20 20% 15%;
     --sidebar-primary: 24 95% 53%;
@@ -96,6 +104,14 @@
     --sidebar-border: 20 15% 22%;
     --sidebar-ring: 24 95% 53%;
   }
+}
+
+/* Theme transition for smooth dark mode toggle */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease, box-shadow 0.3s ease !important;
 }
 
 @layer base {
