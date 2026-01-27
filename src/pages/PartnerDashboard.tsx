@@ -11,7 +11,10 @@ import {
   Home,
   RefreshCw,
   User,
-  AlertCircle
+  AlertCircle,
+  Wifi,
+  WifiOff,
+  Locate
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,8 +22,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useGPSTracking } from "@/hooks/useGPSTracking";
 import type { Database } from "@/integrations/supabase/types";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
@@ -91,6 +96,7 @@ const PartnerDashboard: React.FC = () => {
   const { user, profile, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
+  const [liveTrackingEnabled, setLiveTrackingEnabled] = useState(false);
 
   // Fetch the delivery partner linked to the current user's profile
   const { data: currentPartner, isLoading: partnerLoading, error: partnerError } = useQuery({
@@ -145,7 +151,19 @@ const PartnerDashboard: React.FC = () => {
     refetchInterval: 10000,
   });
 
-  // Update order status and location mutation
+  // Live GPS tracking hook
+  const { 
+    currentPosition: gpsPosition, 
+    isTracking: gpsActive, 
+    error: gpsError,
+    lastDbUpdate,
+    forceUpdate: forceLocationUpdate 
+  } = useGPSTracking({
+    partnerId: currentPartner?.id,
+    isActive: liveTrackingEnabled && !!currentPartner?.id,
+    updateInterval: 3000,
+  });
+
   const updateStatus = useMutation({
     mutationFn: async ({ 
       orderId, 
@@ -382,6 +400,49 @@ const PartnerDashboard: React.FC = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Live Tracking Toggle */}
+        <Card className={`border-2 transition-colors ${liveTrackingEnabled ? "border-green-500 bg-green-50 dark:bg-green-900/10" : "border-border"}`}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {gpsActive ? (
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                    <Wifi className="w-5 h-5 text-green-600 dark:text-green-400 animate-pulse" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                    <WifiOff className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div>
+                  <p className="font-medium text-foreground">Live GPS Tracking</p>
+                  <p className="text-xs text-muted-foreground">
+                    {gpsActive 
+                      ? `Sharing location every 3s${lastDbUpdate ? ` • Updated ${format(lastDbUpdate, "h:mm:ss a")}` : ""}`
+                      : "Enable to share your location in real-time"
+                    }
+                  </p>
+                  {gpsError && (
+                    <p className="text-xs text-destructive mt-1">{gpsError}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {gpsPosition && (
+                  <div className="text-xs text-muted-foreground text-right hidden sm:block">
+                    <p>{gpsPosition.lat.toFixed(5)}</p>
+                    <p>{gpsPosition.lng.toFixed(5)}</p>
+                  </div>
+                )}
+                <Switch
+                  checked={liveTrackingEnabled}
+                  onCheckedChange={setLiveTrackingEnabled}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4">
           <Card>

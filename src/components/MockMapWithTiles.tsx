@@ -39,6 +39,7 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
   const animationRef = useRef<number>();
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 400, height: 300 });
+  const velocityRef = useRef({ lat: 0, lng: 0 });
 
   // Observe container size
   useEffect(() => {
@@ -58,7 +59,7 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // Smooth animation for partner movement
+  // Smooth animation for partner movement with spring physics
   useEffect(() => {
     if (!deliveryPartnerLocation) return;
 
@@ -69,24 +70,31 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
       return;
     }
 
-    const duration = 1500;
+    // Calculate velocity for momentum
+    const distLat = deliveryPartnerLocation.lat - prevPos.lat;
+    const distLng = deliveryPartnerLocation.lng - prevPos.lng;
+    
+    const duration = 2000; // Longer duration for smoother movement
     const startTime = performance.now();
+    const startPos = animatedPartner ? { ...animatedPartner } : prevPos;
 
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const t = Math.min(elapsed / duration, 1);
-      // Smooth easing
-      const eased = 1 - Math.pow(1 - t, 4);
-
+      
+      // Spring easing for natural movement
+      const springT = 1 - Math.pow(1 - t, 4) * Math.cos(t * Math.PI * 0.5);
+      
       setAnimatedPartner({
-        lat: prevPos.lat + (deliveryPartnerLocation.lat - prevPos.lat) * eased,
-        lng: prevPos.lng + (deliveryPartnerLocation.lng - prevPos.lng) * eased,
+        lat: startPos.lat + (deliveryPartnerLocation.lat - startPos.lat) * springT,
+        lng: startPos.lng + (deliveryPartnerLocation.lng - startPos.lng) * springT,
       });
 
       if (t < 1) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
         previousPosRef.current = deliveryPartnerLocation;
+        velocityRef.current = { lat: distLat / (duration / 1000), lng: distLng / (duration / 1000) };
       }
     };
 
