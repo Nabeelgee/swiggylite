@@ -33,9 +33,9 @@ const Header: React.FC = () => {
           <Link to="/" className="flex-shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground text-xl font-bold">S</span>
+                <span className="text-primary-foreground text-xl font-bold">Q</span>
               </div>
-              <span className="hidden sm:block text-xl font-bold text-foreground">Swiggy</span>
+              <span className="hidden sm:block text-xl font-bold text-foreground">QuickBite</span>
             </div>
           </Link>
 
