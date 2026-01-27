@@ -10,7 +10,8 @@ import {
   Truck,
   Home,
   RefreshCw,
-  User
+  User,
+  AlertCircle
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,24 +88,28 @@ const getStatusColor = (status: OrderStatus): string => {
 
 const PartnerDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
 
-  // For demo purposes, we'll use the first delivery partner
-  // In production, this would be linked to the authenticated user
-  const { data: currentPartner, isLoading: partnerLoading } = useQuery({
-    queryKey: ["current_delivery_partner"],
+  // Fetch the delivery partner linked to the current user's profile
+  const { data: currentPartner, isLoading: partnerLoading, error: partnerError } = useQuery({
+    queryKey: ["current_delivery_partner", profile?.delivery_partner_id],
     queryFn: async () => {
+      if (!profile?.delivery_partner_id) {
+        return null;
+      }
+
       const { data, error } = await supabase
         .from("delivery_partners")
         .select("*")
-        .limit(1)
+        .eq("id", profile.delivery_partner_id)
         .single();
 
       if (error) throw error;
       return data;
     },
+    enabled: !!profile?.delivery_partner_id,
   });
 
   // Fetch assigned orders for this partner
@@ -137,10 +142,10 @@ const PartnerDashboard: React.FC = () => {
       return data as unknown as AssignedOrder[];
     },
     enabled: !!currentPartner?.id,
-    refetchInterval: 10000, // Auto-refresh every 10 seconds
+    refetchInterval: 10000,
   });
 
-  // Update order status mutation
+  // Update order status and location mutation
   const updateStatus = useMutation({
     mutationFn: async ({ 
       orderId, 
@@ -151,14 +156,42 @@ const PartnerDashboard: React.FC = () => {
       trackingId: string; 
       newStatus: OrderStatus;
     }) => {
-      // Update order_tracking
+      // Update order_tracking with current GPS location if available
+      const updateData: {
+        status: OrderStatus;
+        status_message: string;
+        updated_at: string;
+        current_latitude?: number;
+        current_longitude?: number;
+      } = {
+        status: newStatus,
+        status_message: `Status updated to ${getStatusLabel(newStatus)}`,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Try to get current location for tracking updates
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { 
+              enableHighAccuracy: true,
+              timeout: 5000 
+            });
+          });
+          updateData.current_latitude = position.coords.latitude;
+          updateData.current_longitude = position.coords.longitude;
+        } catch {
+          // Use partner's last known location if GPS fails
+          if (currentPartner?.current_latitude && currentPartner?.current_longitude) {
+            updateData.current_latitude = currentPartner.current_latitude;
+            updateData.current_longitude = currentPartner.current_longitude;
+          }
+        }
+      }
+
       const { error: trackingError } = await supabase
         .from("order_tracking")
-        .update({
-          status: newStatus,
-          status_message: `Status updated to ${getStatusLabel(newStatus)}`,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq("id", trackingId);
 
       if (trackingError) throw trackingError;
@@ -175,6 +208,7 @@ const PartnerDashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["partner_assigned_orders"] });
       queryClient.invalidateQueries({ queryKey: ["admin_orders"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["order_tracking"] });
       toast.success("Order status updated!");
     },
     onError: (error: Error) => {
@@ -182,7 +216,7 @@ const PartnerDashboard: React.FC = () => {
     },
   });
 
-  // Update partner location
+  // Update partner location - now updates order_tracking as well
   const updateLocation = async () => {
     if (!currentPartner?.id) return;
     
@@ -193,7 +227,8 @@ const PartnerDashboard: React.FC = () => {
         async (position) => {
           const { latitude, longitude } = position.coords;
           
-          const { error } = await supabase
+          // Update delivery partner's location
+          const { error: partnerError } = await supabase
             .from("delivery_partners")
             .update({
               current_latitude: latitude,
@@ -201,12 +236,31 @@ const PartnerDashboard: React.FC = () => {
             })
             .eq("id", currentPartner.id);
 
-          if (error) {
-            toast.error("Failed to update location");
-          } else {
-            toast.success("Location updated!");
-            queryClient.invalidateQueries({ queryKey: ["current_delivery_partner"] });
+          if (partnerError) {
+            toast.error("Failed to update partner location");
+            setIsUpdatingLocation(false);
+            return;
           }
+
+          // Also update all active order_tracking records for this partner
+          const { error: trackingError } = await supabase
+            .from("order_tracking")
+            .update({
+              current_latitude: latitude,
+              current_longitude: longitude,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("delivery_partner_id", currentPartner.id)
+            .neq("status", "delivered")
+            .neq("status", "cancelled");
+
+          if (trackingError) {
+            console.error("Failed to update tracking location:", trackingError);
+          }
+
+          toast.success("Location updated!");
+          queryClient.invalidateQueries({ queryKey: ["current_delivery_partner"] });
+          queryClient.invalidateQueries({ queryKey: ["order_tracking"] });
           setIsUpdatingLocation(false);
         },
         (error) => {
@@ -250,6 +304,46 @@ const PartnerDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Check if user is not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
+            <h2 className="text-xl font-semibold mb-2">Login Required</h2>
+            <p className="text-muted-foreground mb-4">
+              Please log in to access the Partner Dashboard.
+            </p>
+            <Button onClick={() => navigate("/auth")}>
+              Go to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Check if user is not linked to a delivery partner
+  if (!profile?.delivery_partner_id || !currentPartner) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <Truck className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-xl font-semibold mb-2">Not a Delivery Partner</h2>
+            <p className="text-muted-foreground mb-4">
+              Your account is not linked to a delivery partner profile. Please contact an administrator to set up your partner account.
+            </p>
+            <Button variant="outline" onClick={() => navigate("/")}>
+              Go to Home
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -298,7 +392,7 @@ const PartnerDashboard: React.FC = () => {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-swiggy-green">
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
                 {currentPartner?.rating?.toFixed(1) || "4.5"}
               </p>
               <p className="text-sm text-muted-foreground">Rating</p>

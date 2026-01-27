@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Play, Pause, RotateCcw, MapPin, Navigation, Zap, Clock, Users } from "lucide-react";
+import { Play, Pause, RotateCcw, MapPin, Navigation, Zap, Clock, Users, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAllOrders } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ const ROUTE_PRESETS = {
   koramangala_to_hsr: {
     name: "Koramangala → HSR Layout",
     waypoints: [
-      { lat: 12.9352, lng: 77.6245 },  // Start: Koramangala
+      { lat: 12.9352, lng: 77.6245 },
       { lat: 12.9340, lng: 77.6260 },
       { lat: 12.9320, lng: 77.6280 },
       { lat: 12.9300, lng: 77.6300 },
@@ -22,13 +22,13 @@ const ROUTE_PRESETS = {
       { lat: 12.9240, lng: 77.6360 },
       { lat: 12.9220, lng: 77.6380 },
       { lat: 12.9200, lng: 77.6400 },
-      { lat: 12.9180, lng: 77.6420 },  // End: HSR Layout
+      { lat: 12.9180, lng: 77.6420 },
     ],
   },
   whitefield_to_indiranagar: {
     name: "Whitefield → Indiranagar",
     waypoints: [
-      { lat: 12.9698, lng: 77.7500 },  // Start: Whitefield
+      { lat: 12.9698, lng: 77.7500 },
       { lat: 12.9680, lng: 77.7400 },
       { lat: 12.9660, lng: 77.7300 },
       { lat: 12.9640, lng: 77.7200 },
@@ -37,13 +37,13 @@ const ROUTE_PRESETS = {
       { lat: 12.9750, lng: 77.6700 },
       { lat: 12.9780, lng: 77.6500 },
       { lat: 12.9810, lng: 77.6400 },
-      { lat: 12.9784, lng: 77.6408 },  // End: Indiranagar
+      { lat: 12.9784, lng: 77.6408 },
     ],
   },
   btm_to_jayanagar: {
     name: "BTM Layout → Jayanagar",
     waypoints: [
-      { lat: 12.9166, lng: 77.6101 },  // Start: BTM
+      { lat: 12.9166, lng: 77.6101 },
       { lat: 12.9180, lng: 77.6050 },
       { lat: 12.9200, lng: 77.6000 },
       { lat: 12.9220, lng: 77.5950 },
@@ -52,7 +52,7 @@ const ROUTE_PRESETS = {
       { lat: 12.9300, lng: 77.5880 },
       { lat: 12.9320, lng: 77.5850 },
       { lat: 12.9340, lng: 77.5830 },
-      { lat: 12.9250, lng: 77.5830 },  // End: Jayanagar
+      { lat: 12.9250, lng: 77.5830 },
     ],
   },
   custom_circle: {
@@ -71,67 +71,93 @@ const ROUTE_PRESETS = {
   },
 };
 
-interface DeliveryPartner {
+interface OrderTracking {
   id: string;
-  name: string;
-  current_latitude: number | null;
-  current_longitude: number | null;
-  is_available: boolean | null;
+  order_id: string;
+  delivery_partner_id: string | null;
+  status: string;
+  orders: {
+    id: string;
+    restaurant_name: string;
+    delivery_address: string;
+  };
 }
 
 const AdminDeliverySimulator: React.FC = () => {
-  const [partners, setPartners] = useState<DeliveryPartner[]>([]);
-  const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
+  const [trackingRecords, setTrackingRecords] = useState<OrderTracking[]>([]);
+  const [selectedTrackingId, setSelectedTrackingId] = useState<string>("");
   const [selectedRoute, setSelectedRoute] = useState<keyof typeof ROUTE_PRESETS>("koramangala_to_hsr");
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(1); // 1 = normal, 2 = fast, 0.5 = slow
+  const [speed, setSpeed] = useState(1);
   const [currentWaypointIndex, setCurrentWaypointIndex] = useState(0);
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const { data: orders } = useAllOrders();
-  const activeOrders = orders?.filter(o => 
-    ["picked_up", "on_the_way", "arriving"].includes(o.status)
-  );
 
-  // Fetch delivery partners
+  // Fetch active order_tracking records (orders being delivered)
   useEffect(() => {
-    const fetchPartners = async () => {
+    const fetchTrackingRecords = async () => {
       const { data, error } = await supabase
-        .from("delivery_partners")
-        .select("id, name, current_latitude, current_longitude, is_available");
+        .from("order_tracking")
+        .select(`
+          id,
+          order_id,
+          delivery_partner_id,
+          status,
+          orders (
+            id,
+            restaurant_name,
+            delivery_address
+          )
+        `)
+        .in("status", ["confirmed", "preparing", "ready_for_pickup", "picked_up", "on_the_way", "arriving"])
+        .order("updated_at", { ascending: false });
       
       if (error) {
-        console.error("Error fetching partners:", error);
+        console.error("Error fetching tracking records:", error);
         return;
       }
       
-      setPartners(data || []);
-      if (data && data.length > 0 && !selectedPartnerId) {
-        setSelectedPartnerId(data[0].id);
+      setTrackingRecords((data || []) as unknown as OrderTracking[]);
+      if (data && data.length > 0 && !selectedTrackingId) {
+        setSelectedTrackingId(data[0].id);
       }
     };
 
-    fetchPartners();
-  }, [selectedPartnerId]);
+    fetchTrackingRecords();
 
-  // Update partner location in database
-  const updatePartnerLocation = useCallback(async (lat: number, lng: number) => {
-    if (!selectedPartnerId) return;
+    // Subscribe to changes
+    const channel = supabase
+      .channel("tracking-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "order_tracking" }, () => {
+        fetchTrackingRecords();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedTrackingId]);
+
+  // Update order_tracking location in database
+  const updateTrackingLocation = useCallback(async (lat: number, lng: number) => {
+    if (!selectedTrackingId) return;
 
     const { error } = await supabase
-      .from("delivery_partners")
+      .from("order_tracking")
       .update({
         current_latitude: lat,
         current_longitude: lng,
+        updated_at: new Date().toISOString(),
       })
-      .eq("id", selectedPartnerId);
+      .eq("id", selectedTrackingId);
 
     if (error) {
-      console.error("Error updating location:", error);
+      console.error("Error updating tracking location:", error);
       toast.error("Failed to update location");
     }
-  }, [selectedPartnerId]);
+  }, [selectedTrackingId]);
 
   // Interpolate between waypoints for smoother movement
   const interpolatePosition = (from: { lat: number; lng: number }, to: { lat: number; lng: number }, t: number) => ({
@@ -139,36 +165,34 @@ const AdminDeliverySimulator: React.FC = () => {
     lng: from.lng + (to.lng - from.lng) * t,
   });
 
-  // Simulation loop
+  // Simulation loop - now updates order_tracking directly
   useEffect(() => {
-    if (!isRunning || !selectedPartnerId) return;
+    if (!isRunning || !selectedTrackingId) return;
 
     const route = ROUTE_PRESETS[selectedRoute];
     const waypoints = route.waypoints;
-    const baseInterval = 2000; // 2 seconds between waypoints at normal speed
+    const baseInterval = 2000;
     const interval = baseInterval / speed;
 
     let subStep = 0;
-    const subSteps = 5; // Interpolation steps between waypoints
+    const subSteps = 5;
 
     intervalRef.current = setInterval(async () => {
       const currentWaypoint = waypoints[currentWaypointIndex];
       const nextWaypointIndex = (currentWaypointIndex + 1) % waypoints.length;
       const nextWaypoint = waypoints[nextWaypointIndex];
 
-      // Interpolate position
       const t = subStep / subSteps;
       const position = interpolatePosition(currentWaypoint, nextWaypoint, t);
       
       setCurrentPosition(position);
-      await updatePartnerLocation(position.lat, position.lng);
+      await updateTrackingLocation(position.lat, position.lng);
 
       subStep++;
       if (subStep >= subSteps) {
         subStep = 0;
         setCurrentWaypointIndex(nextWaypointIndex);
         
-        // Loop completed
         if (nextWaypointIndex === 0) {
           toast.success("Route loop completed!");
         }
@@ -180,15 +204,15 @@ const AdminDeliverySimulator: React.FC = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, selectedPartnerId, selectedRoute, currentWaypointIndex, speed, updatePartnerLocation]);
+  }, [isRunning, selectedTrackingId, selectedRoute, currentWaypointIndex, speed, updateTrackingLocation]);
 
   const handleStart = () => {
-    if (!selectedPartnerId) {
-      toast.error("Please select a delivery partner");
+    if (!selectedTrackingId) {
+      toast.error("Please select an order to simulate");
       return;
     }
     setIsRunning(true);
-    toast.success("Simulation started!");
+    toast.success("Simulation started! Location updates going to order_tracking.");
   };
 
   const handlePause = () => {
@@ -209,15 +233,15 @@ const AdminDeliverySimulator: React.FC = () => {
     toast.info("Simulation reset");
   };
 
-  const selectedPartner = partners.find(p => p.id === selectedPartnerId);
+  const selectedTracking = trackingRecords.find(t => t.id === selectedTrackingId);
   const currentRoute = ROUTE_PRESETS[selectedRoute];
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Delivery Partner Simulator</h2>
+        <h2 className="text-2xl font-bold text-foreground">Order Tracking Simulator</h2>
         <p className="text-muted-foreground">
-          Test live tracking by simulating delivery partner GPS movement
+          Simulate GPS movement for order tracking (writes to order_tracking table)
         </p>
       </div>
 
@@ -231,24 +255,33 @@ const AdminDeliverySimulator: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Partner Selection */}
+            {/* Order Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Delivery Partner
+                <Package className="w-4 h-4" />
+                Select Order to Track
               </label>
-              <Select value={selectedPartnerId} onValueChange={setSelectedPartnerId}>
+              <Select value={selectedTrackingId} onValueChange={setSelectedTrackingId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a partner" />
+                  <SelectValue placeholder="Select an active order" />
                 </SelectTrigger>
                 <SelectContent>
-                  {partners.map((partner) => (
-                    <SelectItem key={partner.id} value={partner.id}>
-                      {partner.name} {partner.is_available ? "✅" : "⏸️"}
+                  {trackingRecords.length === 0 ? (
+                    <SelectItem value="none" disabled>
+                      No active orders with tracking
                     </SelectItem>
-                  ))}
+                  ) : (
+                    trackingRecords.map((tracking) => (
+                      <SelectItem key={tracking.id} value={tracking.id}>
+                        {tracking.orders?.restaurant_name || "Unknown"} - {tracking.status}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                {trackingRecords.length} active order(s) with tracking
+              </p>
             </div>
 
             {/* Route Selection */}
@@ -300,7 +333,7 @@ const AdminDeliverySimulator: React.FC = () => {
             {/* Control Buttons */}
             <div className="flex gap-2">
               {!isRunning ? (
-                <Button onClick={handleStart} className="flex-1 gap-2">
+                <Button onClick={handleStart} className="flex-1 gap-2" disabled={!selectedTrackingId}>
                   <Play className="w-4 h-4" />
                   Start
                 </Button>
@@ -370,39 +403,17 @@ const AdminDeliverySimulator: React.FC = () => {
               </div>
             </div>
 
-            {/* Selected Partner Info */}
-            {selectedPartner && (
-              <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-                <span className="text-sm font-medium">Selected Partner</span>
-                <div className="text-xs">
-                  <p><strong>Name:</strong> {selectedPartner.name}</p>
-                  <p><strong>ID:</strong> {selectedPartner.id.slice(0, 8)}...</p>
-                  <p>
-                    <strong>DB Location:</strong>{" "}
-                    {selectedPartner.current_latitude && selectedPartner.current_longitude
-                      ? `${selectedPartner.current_latitude.toFixed(4)}, ${selectedPartner.current_longitude.toFixed(4)}`
-                      : "Not set"
-                    }
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Active Orders */}
-            {activeOrders && activeOrders.length > 0 && (
+            {/* Selected Order Info */}
+            {selectedTracking && (
               <div className="p-3 bg-primary/10 rounded-lg space-y-2">
-                <span className="text-sm font-medium text-primary">Active Orders</span>
-                <p className="text-xs text-muted-foreground">
-                  {activeOrders.length} order(s) currently being tracked. 
-                  Open them in another tab to see live updates!
-                </p>
-                <div className="space-y-1">
-                  {activeOrders.slice(0, 3).map((order) => (
-                    <div key={order.id} className="text-xs flex justify-between">
-                      <span>#{order.id.slice(0, 8)}</span>
-                      <span className="text-primary">{order.status}</span>
-                    </div>
-                  ))}
+                <span className="text-sm font-medium text-primary">Selected Order</span>
+                <div className="text-xs space-y-1">
+                  <p><strong>Restaurant:</strong> {selectedTracking.orders?.restaurant_name}</p>
+                  <p><strong>Status:</strong> {selectedTracking.status}</p>
+                  <p><strong>Tracking ID:</strong> {selectedTracking.id.slice(0, 8)}...</p>
+                  <p className="text-muted-foreground truncate">
+                    <strong>To:</strong> {selectedTracking.orders?.delivery_address}
+                  </p>
                 </div>
               </div>
             )}
@@ -417,15 +428,16 @@ const AdminDeliverySimulator: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <ol className="list-decimal list-inside space-y-2">
-            <li>Create an order and update its status to <strong>"picked_up"</strong> or <strong>"on_the_way"</strong> in the Orders page</li>
-            <li>Assign a delivery partner to the order (via order_tracking table)</li>
-            <li>Select the same delivery partner in this simulator</li>
+            <li>Create an order from the main app and complete checkout</li>
+            <li>Assign a delivery partner to the order in the <strong>Orders</strong> page</li>
+            <li>Select the order in this simulator dropdown</li>
             <li>Choose a route preset and click <strong>Start</strong></li>
-            <li>Open the order tracking page in another tab (<code>/order/:orderId</code>)</li>
-            <li>Watch the delivery partner marker move in real-time on the map!</li>
+            <li>Open the order tracking page (<code>/order/:orderId</code>) in another tab</li>
+            <li>Watch the delivery marker move in real-time on the map!</li>
           </ol>
           <p className="pt-2 border-t border-border">
-            <strong>Tip:</strong> Use the Debug Panel on the tracking page (admin only) to see raw payloads and subscription status.
+            <strong>Note:</strong> This simulator writes directly to <code>order_tracking.current_latitude/longitude</code>, 
+            so the tracking map will update in real-time for the selected order.
           </p>
         </CardContent>
       </Card>
