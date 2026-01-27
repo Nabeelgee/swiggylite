@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Clock, ChevronRight, Package } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { useAuth } from "@/context/AuthContext";
-import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 
@@ -29,12 +28,12 @@ const OrdersPage: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
-        return "bg-swiggy-green text-white";
+        return "bg-primary/20 text-primary";
       case "cancelled":
-        return "bg-destructive text-white";
+        return "bg-destructive text-destructive-foreground";
       case "on_the_way":
       case "picked_up":
-        return "bg-primary text-white";
+        return "bg-primary text-primary-foreground";
       default:
         return "bg-secondary text-foreground";
     }
@@ -46,8 +45,6 @@ const OrdersPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       <main className="container mx-auto px-4 py-6">
         <Link
           to="/"

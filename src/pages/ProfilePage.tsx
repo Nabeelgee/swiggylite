@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Mail, Phone, MapPin, LogOut, Edit2, Save, X } from "lucide-react";
+import { ArrowLeft, User, Mail, Phone, MapPin, LogOut, Edit2, Save, X, Settings } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -64,8 +63,6 @@ const ProfilePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       <main className="container mx-auto px-4 py-6 max-w-2xl">
         <Link
           to="/"
@@ -75,18 +72,18 @@ const ProfilePage: React.FC = () => {
           <span>Back to home</span>
         </Link>
 
-        <div className="bg-card rounded-2xl swiggy-shadow overflow-hidden animate-fade-in">
+        <div className="bg-card rounded-2xl shadow-lg overflow-hidden animate-fade-in">
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary to-primary/80 p-6 sm:p-8 text-white">
+          <div className="bg-gradient-to-r from-primary to-accent p-6 sm:p-8 text-primary-foreground">
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-3xl">
+              <div className="w-20 h-20 bg-primary-foreground/20 rounded-full flex items-center justify-center text-3xl backdrop-blur-sm">
                 👤
               </div>
               <div>
                 <h1 className="text-2xl font-bold">
                   {profile?.full_name || "User"}
                 </h1>
-                <p className="text-white/80">{user?.email}</p>
+                <p className="opacity-80">{user?.email}</p>
               </div>
             </div>
           </div>
@@ -122,7 +119,7 @@ const ProfilePage: React.FC = () => {
             <div className="space-y-4">
               {/* Full Name */}
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-swiggy-orange-light rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
                   <User className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1">
@@ -146,8 +143,8 @@ const ProfilePage: React.FC = () => {
 
               {/* Email */}
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Mail className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1">
                   <label className="text-sm text-muted-foreground">Email</label>
@@ -157,8 +154,8 @@ const ProfilePage: React.FC = () => {
 
               {/* Phone */}
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Phone className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                  <Phone className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1">
                   <label className="text-sm text-muted-foreground">Phone</label>
@@ -181,8 +178,8 @@ const ProfilePage: React.FC = () => {
 
               {/* Default Address */}
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-5 h-5 text-purple-600" />
+                <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1">
                   <label className="text-sm text-muted-foreground">Default Address</label>
@@ -214,14 +211,14 @@ const ProfilePage: React.FC = () => {
                   📦 My Orders
                 </Button>
               </Link>
-              <Link to="/addresses">
-                <Button variant="outline" className="w-full justify-start">
-                  📍 Saved Addresses
-                </Button>
-              </Link>
               <Link to="/favorites">
                 <Button variant="outline" className="w-full justify-start">
                   ❤️ Favorites
+                </Button>
+              </Link>
+              <Link to="/checkout">
+                <Button variant="outline" className="w-full justify-start">
+                  🛒 My Cart
                 </Button>
               </Link>
               <Link to="/help">
@@ -230,6 +227,17 @@ const ProfilePage: React.FC = () => {
                 </Button>
               </Link>
             </div>
+          </div>
+
+          {/* Admin Panel - Mobile */}
+          <div className="border-t border-border p-6 sm:p-8 md:hidden">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Administration</h3>
+            <Link to="/admin">
+              <Button variant="secondary" className="w-full justify-start">
+                <Settings className="w-5 h-5 mr-2" />
+                Admin Panel
+              </Button>
+            </Link>
           </div>
 
           {/* Sign Out */}

@@ -1,26 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, ShoppingBag, User, Clock, MapPin, ChevronDown, Heart, Menu, X } from "lucide-react";
-import { useCart } from "@/context/CartContext";
+import { Home, Search, User, Clock, MapPin, ChevronDown, Heart, Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import Cart from "./Cart";
 import GlobalSearch from "./GlobalSearch";
+import quickbiteLogo from "@/assets/quickbite-logo.png";
 
 interface NavItem {
   icon: React.ElementType;
   label: string;
   path: string;
-  badge?: number;
 }
 
 const TopNavBar: React.FC = () => {
   const location = useLocation();
-  const { getTotalItems } = useCart();
   const { user, profile } = useAuth();
-  const totalItems = getTotalItems();
   const [scrolled, setScrolled] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -51,24 +46,26 @@ const TopNavBar: React.FC = () => {
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           scrolled
-            ? "bg-card/70 backdrop-blur-xl border-b border-border/50 shadow-lg"
-            : "bg-gradient-to-b from-background/80 to-transparent backdrop-blur-sm"
+            ? "bg-card/80 backdrop-blur-xl border-b border-border/50 shadow-lg"
+            : "bg-gradient-to-b from-background to-transparent backdrop-blur-sm"
         )}
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform">
-                <span className="text-primary-foreground text-xl font-bold">Q</span>
-              </div>
-              <span className="hidden sm:block text-xl font-bold text-primary">
+              <img 
+                src={quickbiteLogo} 
+                alt="QuickBite" 
+                className="h-10 w-10 object-contain group-hover:scale-105 transition-transform"
+              />
+              <span className="hidden sm:block text-xl font-bold text-foreground">
                 QuickBite
               </span>
             </Link>
 
             {/* Location (Desktop) */}
-            <button className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 hover:bg-secondary transition-colors">
+            <button className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/80 hover:bg-secondary transition-colors">
               <MapPin className="w-4 h-4 text-primary" />
               <span className="font-medium text-foreground text-sm">Koramangala, Bangalore</span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -111,23 +108,6 @@ const TopNavBar: React.FC = () => {
                 {showSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
               </Button>
 
-              {/* Cart */}
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative rounded-full">
-                    <ShoppingBag className="w-5 h-5" />
-                    {totalItems > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center animate-scale-in">
-                        {totalItems > 9 ? "9+" : totalItems}
-                      </span>
-                    )}
-                  </Button>
-                </SheetTrigger>
-                <SheetContent className="w-full sm:max-w-md p-0">
-                  <Cart />
-                </SheetContent>
-              </Sheet>
-
               {/* User */}
               <Link to={user ? "/profile" : "/auth"}>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -165,7 +145,7 @@ const TopNavBar: React.FC = () => {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden pb-4 animate-fade-in">
-              <div className="bg-card/80 backdrop-blur-xl rounded-2xl p-2 border border-border/50">
+              <div className="bg-card/90 backdrop-blur-xl rounded-2xl p-2 border border-border/50 shadow-xl">
                 {/* Location */}
                 <button className="flex items-center gap-2 w-full px-4 py-3 rounded-xl hover:bg-secondary/50 transition-colors">
                   <MapPin className="w-4 h-4 text-primary" />

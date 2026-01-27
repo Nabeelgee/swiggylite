@@ -5,7 +5,6 @@ import { useRestaurant, useMenuItems, MenuItem as DBMenuItem } from "@/hooks/use
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { useAuth } from "@/context/AuthContext";
 import MenuItem from "@/components/MenuItem";
-import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -61,7 +60,6 @@ const RestaurantPage: React.FC = () => {
   if (restaurantLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <main className="container mx-auto px-4 py-6">
           <Skeleton className="h-64 w-full rounded-2xl mb-6" />
           <Skeleton className="h-8 w-48 mb-4" />
@@ -74,7 +72,6 @@ const RestaurantPage: React.FC = () => {
   if (restaurantError || !restaurant) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-20 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Restaurant not found</h1>
           <Link to="/">
@@ -87,8 +84,6 @@ const RestaurantPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
       <main className="container mx-auto px-4 py-6">
         {/* Back Button */}
         <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">

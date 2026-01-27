@@ -1,8 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { Heart, ArrowLeft, Loader2, Store } from "lucide-react";
+import { Heart, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { useFavoriteRestaurants, useToggleFavorite } from "@/hooks/useFavorites";
@@ -16,7 +15,6 @@ const FavoritesPage = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-16 text-center">
           <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <h1 className="text-2xl font-bold mb-2">Sign in to view favorites</h1>
@@ -33,7 +31,6 @@ const FavoritesPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-16 flex justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -48,7 +45,6 @@ const FavoritesPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <div className="container mx-auto px-4 py-6">
         <Button
           variant="ghost"
