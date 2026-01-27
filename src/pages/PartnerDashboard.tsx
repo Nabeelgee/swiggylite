@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Wifi,
   WifiOff,
-  Locate
+  Locate,
+  Route
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,8 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useGPSTracking } from "@/hooks/useGPSTracking";
+import { useNavigationInstructions } from "@/hooks/useNavigationInstructions";
+import NavigationInstructions from "@/components/NavigationInstructions";
 import type { Database } from "@/integrations/supabase/types";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
@@ -89,6 +92,168 @@ const getStatusColor = (status: OrderStatus): string => {
     default:
       return "bg-muted text-muted-foreground";
   }
+};
+
+// Order Card Component with Navigation
+interface OrderCardWithNavigationProps {
+  tracking: AssignedOrder;
+  order: AssignedOrder["orders"];
+  nextStatus: OrderStatus | null;
+  currentPartner: any;
+  gpsPosition: { lat: number; lng: number } | null;
+  updateStatus: any;
+  getStatusColor: (status: OrderStatus) => string;
+  getStatusLabel: (status: OrderStatus) => string;
+}
+
+const OrderCardWithNavigation: React.FC<OrderCardWithNavigationProps> = ({
+  tracking,
+  order,
+  nextStatus,
+  currentPartner,
+  gpsPosition,
+  updateStatus,
+  getStatusColor,
+  getStatusLabel,
+}) => {
+  const [showNavigation, setShowNavigation] = useState(false);
+  
+  // Get current location for navigation (prefer GPS, fall back to partner's stored location)
+  const currentLocation = gpsPosition || 
+    (currentPartner?.current_latitude && currentPartner?.current_longitude 
+      ? { lat: currentPartner.current_latitude, lng: currentPartner.current_longitude }
+      : null);
+  
+  const deliveryLocation = order.delivery_latitude && order.delivery_longitude
+    ? { lat: order.delivery_latitude, lng: order.delivery_longitude }
+    : null;
+
+  // Fetch navigation instructions
+  const { navigation, isLoading: navLoading } = useNavigationInstructions(
+    currentLocation,
+    deliveryLocation
+  );
+
+  // Show navigation for active delivery statuses
+  const isActiveDelivery = ["picked_up", "on_the_way", "arriving"].includes(tracking.status);
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-base">
+              {order.restaurant_name}
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Order #{order.id.slice(0, 8).toUpperCase()}
+            </p>
+          </div>
+          <Badge className={getStatusColor(tracking.status)}>
+            {getStatusLabel(tracking.status)}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Navigation Instructions - Show for active deliveries */}
+        {isActiveDelivery && navigation && (
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowNavigation(!showNavigation)}
+              className="w-full gap-2"
+            >
+              <Route className="w-4 h-4" />
+              {showNavigation ? "Hide Navigation" : "Show Turn-by-Turn Navigation"}
+              <span className="ml-auto text-xs text-muted-foreground">
+                {navigation.totalDistance} • {navigation.totalDuration}
+              </span>
+            </Button>
+            
+            {showNavigation && (
+              <NavigationInstructions
+                steps={navigation.steps}
+                totalDistance={navigation.totalDistance}
+                totalDuration={navigation.totalDuration}
+                isLoading={navLoading}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Delivery Address */}
+        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+          <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">
+              Delivery Address
+            </p>
+            <p className="text-sm text-muted-foreground truncate">
+              {order.delivery_address}
+            </p>
+          </div>
+          {order.delivery_latitude && order.delivery_longitude && (
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_latitude},${order.delivery_longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button size="sm" variant="outline" className="gap-1">
+                <Navigation className="w-4 h-4" />
+                <span className="hidden sm:inline">Navigate</span>
+              </Button>
+            </a>
+          )}
+        </div>
+
+        {/* Order Info */}
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            <span>
+              {format(new Date(order.created_at), "h:mm a")}
+            </span>
+          </div>
+          <p className="font-semibold text-foreground">
+            ₹{order.total_amount}
+          </p>
+        </div>
+
+        {/* Action Button */}
+        {nextStatus && (
+          <Button
+            className="w-full gap-2"
+            size="lg"
+            onClick={() => updateStatus.mutate({
+              orderId: order.id,
+              trackingId: tracking.id,
+              newStatus: nextStatus,
+            })}
+            disabled={updateStatus.isPending}
+          >
+            {updateStatus.isPending ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              STATUS_FLOW.find(s => s.status === nextStatus)?.icon && 
+              React.createElement(
+                STATUS_FLOW.find(s => s.status === nextStatus)!.icon,
+                { className: "w-4 h-4" }
+              )
+            )}
+            {`Mark as ${getStatusLabel(nextStatus)}`}
+          </Button>
+        )}
+
+        {tracking.status === "delivered" && (
+          <div className="flex items-center justify-center gap-2 py-3 text-primary">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">Delivered Successfully!</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 };
 
 const PartnerDashboard: React.FC = () => {
@@ -493,94 +658,17 @@ const PartnerDashboard: React.FC = () => {
                 const nextStatus = getNextStatus(tracking.status);
 
                 return (
-                  <Card key={tracking.id} className="overflow-hidden">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-base">
-                            {order.restaurant_name}
-                          </CardTitle>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Order #{order.id.slice(0, 8).toUpperCase()}
-                          </p>
-                        </div>
-                        <Badge className={getStatusColor(tracking.status)}>
-                          {getStatusLabel(tracking.status)}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Delivery Address */}
-                      <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                        <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground">
-                            Delivery Address
-                          </p>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {order.delivery_address}
-                          </p>
-                        </div>
-                        {order.delivery_latitude && order.delivery_longitude && (
-                          <a
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_latitude},${order.delivery_longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Button size="sm" variant="outline" className="gap-1">
-                              <Navigation className="w-4 h-4" />
-                              <span className="hidden sm:inline">Navigate</span>
-                            </Button>
-                          </a>
-                        )}
-                      </div>
-
-                      {/* Order Info */}
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Clock className="w-4 h-4" />
-                          <span>
-                            {format(new Date(order.created_at), "h:mm a")}
-                          </span>
-                        </div>
-                        <p className="font-semibold text-foreground">
-                          ₹{order.total_amount}
-                        </p>
-                      </div>
-
-                      {/* Action Button */}
-                      {nextStatus && (
-                        <Button
-                          className="w-full gap-2"
-                          size="lg"
-                          onClick={() => updateStatus.mutate({
-                            orderId: order.id,
-                            trackingId: tracking.id,
-                            newStatus: nextStatus,
-                          })}
-                          disabled={updateStatus.isPending}
-                        >
-                          {updateStatus.isPending ? (
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                          ) : (
-                            STATUS_FLOW.find(s => s.status === nextStatus)?.icon && 
-                            React.createElement(
-                              STATUS_FLOW.find(s => s.status === nextStatus)!.icon,
-                              { className: "w-4 h-4" }
-                            )
-                          )}
-                          {`Mark as ${getStatusLabel(nextStatus)}`}
-                        </Button>
-                      )}
-
-                      {tracking.status === "delivered" && (
-                        <div className="flex items-center justify-center gap-2 py-3 text-green-600">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Delivered Successfully!</span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <OrderCardWithNavigation
+                    key={tracking.id}
+                    tracking={tracking}
+                    order={order}
+                    nextStatus={nextStatus}
+                    currentPartner={currentPartner}
+                    gpsPosition={gpsPosition}
+                    updateStatus={updateStatus}
+                    getStatusColor={getStatusColor}
+                    getStatusLabel={getStatusLabel}
+                  />
                 );
               })}
             </div>
