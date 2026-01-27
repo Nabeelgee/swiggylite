@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Check } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useCreateOrder } from "@/hooks/useOrders";
 import Header from "@/components/Header";
-import LocationPicker from "@/components/LocationPicker";
+import SimpleLocationPicker from "@/components/SimpleLocationPicker";
+import MockMapWithTiles from "@/components/MockMapWithTiles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -131,33 +132,54 @@ const CheckoutPage: React.FC = () => {
                 </h2>
               </div>
 
-              <div className="flex gap-2">
+              <div className="space-y-4">
                 <Input
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Enter your full delivery address"
                   className="flex-1"
                 />
-                <LocationPicker
-                  onLocationSelect={(loc) => {
-                    setAddress(loc.address);
-                    setDeliveryCoords({ lat: loc.lat, lng: loc.lng });
-                  }}
-                  initialLocation={deliveryCoords}
-                />
-              </div>
+                
+                {/* Map Preview */}
+                <div className="h-48 rounded-xl overflow-hidden border">
+                  <MockMapWithTiles
+                    deliveryLocation={deliveryCoords}
+                    deliveryAddress={address || "Your delivery location"}
+                    zoom={15}
+                    interactive={true}
+                    onLocationSelect={(lat, lng) => {
+                      setDeliveryCoords({ lat, lng });
+                      setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                    }}
+                  />
+                </div>
 
-              {profile?.default_address && address !== profile.default_address && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAddress(profile.default_address || "")}
-                  className="text-primary mt-2"
-                >
-                  <MapPin className="w-4 h-4 mr-1" />
-                  Use saved address
-                </Button>
-              )}
+                <div className="flex gap-2">
+                  <SimpleLocationPicker
+                    onLocationSelect={(loc) => {
+                      setAddress(loc.address);
+                      setDeliveryCoords({ lat: loc.lat, lng: loc.lng });
+                    }}
+                    initialLocation={deliveryCoords}
+                    trigger={
+                      <Button variant="outline" className="gap-2 flex-1">
+                        <MapPin className="w-4 h-4" />
+                        Pick on Map
+                      </Button>
+                    }
+                  />
+                  {profile?.default_address && address !== profile.default_address && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => setAddress(profile.default_address || "")}
+                      className="text-primary flex-1"
+                    >
+                      <MapPin className="w-4 h-4 mr-1" />
+                      Use saved
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Special Instructions */}

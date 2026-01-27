@@ -131,4 +131,23 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Safe area for mobile bottom bar */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Pull to refresh overscroll behavior */
+  .pull-refresh-container {
+    overscroll-behavior-y: contain;
+  }
 }
