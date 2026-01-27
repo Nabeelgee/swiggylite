@@ -169,11 +169,7 @@ const TopNavBar: React.FC = () => {
           {mobileMenuOpen && <div className="md:hidden pb-4 animate-fade-in">
               <div className="bg-card/90 backdrop-blur-xl rounded-2xl p-2 border border-border/50 shadow-xl">
                 {/* Location */}
-                <button className="flex items-center gap-2 w-full px-4 py-3 rounded-xl hover:bg-secondary/50 transition-colors">
-                  <MapPin className="w-4 h-4 text-primary" />
-                  <span className="font-medium text-foreground text-sm">Koramangala, Bangalore</span>
-                  <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto" />
-                </button>
+                
                 
                 <div className="h-px bg-border/50 my-1" />
 
