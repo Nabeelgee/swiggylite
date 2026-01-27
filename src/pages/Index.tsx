@@ -1,6 +1,5 @@
 import React, { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import CategoryCarousel from "@/components/CategoryCarousel";
 import RestaurantList from "@/components/RestaurantList";
@@ -19,7 +18,6 @@ const Index: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <PullToRefresh onRefresh={handleRefresh}>
         <main>
           <Hero />

@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useOfflineStorage } from "./useOfflineStorage";
+import { useEffect } from "react";
 
 export interface Restaurant {
   id: string;
@@ -31,9 +33,18 @@ export interface MenuItem {
 }
 
 export const useRestaurants = () => {
-  return useQuery({
+  const { isOnline, cacheRestaurants, getCachedRestaurants } = useOfflineStorage();
+
+  const query = useQuery({
     queryKey: ["restaurants"],
     queryFn: async () => {
+      // If offline, return cached data
+      if (!isOnline) {
+        const cached = getCachedRestaurants();
+        if (cached) return cached as Restaurant[];
+        throw new Error("No cached data available");
+      }
+
       const { data, error } = await supabase
         .from("restaurants")
         .select("*")
@@ -43,7 +54,17 @@ export const useRestaurants = () => {
       if (error) throw error;
       return data as Restaurant[];
     },
+    staleTime: isOnline ? 1000 * 60 * 5 : Infinity, // 5 minutes when online, infinite when offline
   });
+
+  // Cache data when online and data is available
+  useEffect(() => {
+    if (isOnline && query.data) {
+      cacheRestaurants(query.data);
+    }
+  }, [isOnline, query.data, cacheRestaurants]);
+
+  return query;
 };
 
 export const useRestaurant = (id: string) => {
@@ -64,9 +85,18 @@ export const useRestaurant = (id: string) => {
 };
 
 export const useMenuItems = (restaurantId: string) => {
-  return useQuery({
+  const { isOnline, cacheMenuItems, getCachedMenuItems } = useOfflineStorage();
+
+  const query = useQuery({
     queryKey: ["menu_items", restaurantId],
     queryFn: async () => {
+      // If offline, return cached data
+      if (!isOnline) {
+        const cached = getCachedMenuItems(restaurantId);
+        if (cached) return cached as MenuItem[];
+        throw new Error("No cached menu data available");
+      }
+
       const { data, error } = await supabase
         .from("menu_items")
         .select("*")
@@ -78,5 +108,15 @@ export const useMenuItems = (restaurantId: string) => {
       return data as MenuItem[];
     },
     enabled: !!restaurantId,
+    staleTime: isOnline ? 1000 * 60 * 5 : Infinity,
   });
+
+  // Cache menu items when online
+  useEffect(() => {
+    if (isOnline && query.data) {
+      cacheMenuItems(restaurantId, query.data);
+    }
+  }, [isOnline, query.data, restaurantId, cacheMenuItems]);
+
+  return query;
 };

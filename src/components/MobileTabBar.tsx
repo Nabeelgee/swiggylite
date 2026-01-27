@@ -33,52 +33,57 @@ const MobileTabBar: React.FC = () => {
   if (shouldHide) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border md:hidden safe-area-bottom">
-      <div className="flex items-center justify-around h-16 px-2">
-        {tabs.map((tab) => {
-          const isActive =
-            tab.path === "/"
-              ? location.pathname === "/"
-              : location.pathname.startsWith(tab.path.split("?")[0]);
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-area-bottom">
+      {/* Glass container with rounded corners and margin */}
+      <div className="mx-3 mb-3">
+        <div className="bg-card/70 backdrop-blur-xl border border-border/30 rounded-2xl shadow-2xl shadow-black/10">
+          <div className="flex items-center justify-around h-16 px-2">
+            {tabs.map((tab) => {
+              const isActive =
+                tab.path === "/"
+                  ? location.pathname === "/"
+                  : location.pathname.startsWith(tab.path.split("?")[0]);
 
-          return (
-            <Link
-              key={tab.label}
-              to={tab.path}
-              className={cn(
-                "flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-all duration-200",
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <div className="relative">
-                <tab.icon
+              return (
+                <Link
+                  key={tab.label}
+                  to={tab.path}
                   className={cn(
-                    "w-5 h-5 transition-transform",
-                    isActive && "scale-110"
+                    "flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-all duration-300 rounded-xl mx-0.5",
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
-                />
-                {tab.badge && tab.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-scale-in">
-                    {tab.badge > 9 ? "9+" : tab.badge}
+                >
+                  <div className="relative">
+                    {isActive && (
+                      <div className="absolute -inset-2 bg-primary/10 rounded-xl animate-scale-in" />
+                    )}
+                    <tab.icon
+                      className={cn(
+                        "w-5 h-5 transition-all duration-300 relative z-10",
+                        isActive && "scale-110"
+                      )}
+                    />
+                    {tab.badge && tab.badge > 0 && (
+                      <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-scale-in z-20 shadow-lg shadow-primary/30">
+                        {tab.badge > 9 ? "9+" : tab.badge}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-[10px] font-medium transition-all",
+                      isActive && "font-semibold"
+                    )}
+                  >
+                    {tab.label}
                   </span>
-                )}
-              </div>
-              <span
-                className={cn(
-                  "text-[10px] font-medium transition-all",
-                  isActive && "font-semibold"
-                )}
-              >
-                {tab.label}
-              </span>
-              {isActive && (
-                <div className="absolute bottom-1 w-8 h-0.5 bg-primary rounded-full animate-fade-in" />
-              )}
-            </Link>
-          );
-        })}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </nav>
   );

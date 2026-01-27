@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { useOfflineStorage } from "./useOfflineStorage";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
 
@@ -60,10 +61,18 @@ export interface DeliveryPartner {
 
 export const useOrders = () => {
   const { user } = useAuth();
+  const { isOnline, cacheOrders, getCachedOrders } = useOfflineStorage();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["orders", user?.id],
     queryFn: async () => {
+      // If offline, return cached data
+      if (!isOnline) {
+        const cached = getCachedOrders();
+        if (cached) return cached as Order[];
+        throw new Error("No cached orders available");
+      }
+
       const { data, error } = await supabase
         .from("orders")
         .select("*")
@@ -73,7 +82,17 @@ export const useOrders = () => {
       return data as Order[];
     },
     enabled: !!user,
+    staleTime: isOnline ? 1000 * 60 * 2 : Infinity, // 2 minutes when online
   });
+
+  // Cache orders when online
+  useEffect(() => {
+    if (isOnline && query.data) {
+      cacheOrders(query.data);
+    }
+  }, [isOnline, query.data, cacheOrders]);
+
+  return query;
 };
 
 export const useOrder = (orderId: string) => {
