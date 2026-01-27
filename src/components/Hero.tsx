@@ -1,9 +1,7 @@
 import React from "react";
 import { Search, MapPin } from "lucide-react";
-
 const Hero: React.FC = () => {
-  return (
-    <section className="relative bg-gradient-to-br from-primary via-primary to-primary/90 overflow-hidden">
+  return <section className="relative bg-gradient-to-br from-primary via-primary to-primary/90 overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-10 left-10 w-32 h-32 rounded-full bg-white/20 blur-3xl" />
@@ -19,21 +17,21 @@ const Hero: React.FC = () => {
             <br />
             <span className="text-white/90">in a few clicks</span>
           </h1>
-          <p className="text-base sm:text-lg text-primary-foreground/80 mb-8 animate-fade-in" style={{ animationDelay: "100ms" }}>
+          <p className="text-base sm:text-lg text-primary-foreground/80 mb-8 animate-fade-in" style={{
+          animationDelay: "100ms"
+        }}>
             From your favorite restaurants to your doorstep
           </p>
 
           {/* Search Box */}
-          <div className="bg-card rounded-2xl p-2 swiggy-shadow animate-fade-in" style={{ animationDelay: "200ms" }}>
+          <div className="bg-card rounded-2xl p-2 swiggy-shadow animate-fade-in" style={{
+          animationDelay: "200ms"
+        }}>
             <div className="flex flex-col sm:flex-row gap-2">
               {/* Location Input */}
               <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-secondary rounded-xl">
                 <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Enter delivery location"
-                  className="flex-1 bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground text-sm"
-                />
+                <input type="text" placeholder="Enter delivery location" className="flex-1 bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground text-sm" />
               </div>
 
               {/* Search Button */}
@@ -45,20 +43,9 @@ const Hero: React.FC = () => {
           </div>
 
           {/* Popular Locations */}
-          <div className="mt-6 flex flex-wrap justify-center gap-2 animate-fade-in" style={{ animationDelay: "300ms" }}>
-            {["Koramangala", "Indiranagar", "HSR Layout", "Whitefield"].map((location) => (
-              <button
-                key={location}
-                className="px-4 py-2 bg-white/10 text-primary-foreground rounded-full text-sm hover:bg-white/20 transition-colors"
-              >
-                {location}
-              </button>
-            ))}
-          </div>
+          
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default Hero;
