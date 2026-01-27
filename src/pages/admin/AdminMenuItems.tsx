@@ -146,11 +146,11 @@ const AdminMenuItems: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Menu Items</h2>
-          <p className="text-muted-foreground">Manage menu items for all restaurants</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Menu Items</h2>
+          <p className="text-sm text-muted-foreground">Manage menu items for all restaurants</p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -161,12 +161,12 @@ const AdminMenuItems: React.FC = () => {
           }
         }}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 w-full sm:w-auto">
               <Plus className="w-4 h-4" />
               Add Menu Item
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? "Edit Menu Item" : "Add New Menu Item"}
@@ -194,7 +194,7 @@ const AdminMenuItems: React.FC = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Item Name *</Label>
                   <Input
@@ -246,7 +246,7 @@ const AdminMenuItems: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-wrap gap-6">
+              <div className="flex flex-wrap gap-4 sm:gap-6">
                 <div className="flex items-center gap-2">
                   <Switch
                     id="is_veg"
@@ -275,15 +275,16 @@ const AdminMenuItems: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
+                  className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createMenuItem.isPending || updateMenuItem.isPending}>
+                <Button type="submit" disabled={createMenuItem.isPending || updateMenuItem.isPending} className="w-full sm:w-auto">
                   {editingId ? "Update" : "Create"} Item
                 </Button>
               </div>
@@ -292,8 +293,8 @@ const AdminMenuItems: React.FC = () => {
         </Dialog>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col gap-3">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={search}
@@ -306,7 +307,7 @@ const AdminMenuItems: React.FC = () => {
           value={selectedRestaurant || "all"} 
           onValueChange={(value) => setSelectedRestaurant(value === "all" ? "" : value)}
         >
-          <SelectTrigger className="w-full sm:w-[250px]">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="All Restaurants" />
           </SelectTrigger>
           <SelectContent>
@@ -323,108 +324,189 @@ const AdminMenuItems: React.FC = () => {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+            <div key={i} className="h-20 bg-muted rounded-xl animate-pulse" />
           ))}
         </div>
       ) : (
-        <div className="bg-card rounded-lg border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead className="hidden md:table-cell">Restaurant</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead className="hidden sm:table-cell">Category</TableHead>
-                <TableHead className="hidden lg:table-cell">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredItems?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No menu items found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredItems?.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 border-2 rounded-sm ${
-                          item.is_veg ? "border-swiggy-green" : "border-destructive"
-                        }`}>
-                          <div className={`w-1.5 h-1.5 m-0.5 rounded-full ${
-                            item.is_veg ? "bg-swiggy-green" : "bg-destructive"
-                          }`} />
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">{item.name}</p>
-                          {item.is_bestseller && (
-                            <span className="text-xs text-primary">★ Bestseller</span>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <p className="text-sm text-muted-foreground">
+        <>
+          {/* Mobile Card View */}
+          <div className="block sm:hidden space-y-3">
+            {filteredItems?.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No menu items found
+              </div>
+            ) : (
+              filteredItems?.map((item) => (
+                <div key={item.id} className="bg-card rounded-xl border p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className={`w-4 h-4 border-2 rounded-sm flex-shrink-0 mt-1 ${
+                      item.is_veg ? "border-swiggy-green" : "border-destructive"
+                    }`}>
+                      <div className={`w-2 h-2 m-0.5 rounded-full ${
+                        item.is_veg ? "bg-swiggy-green" : "bg-destructive"
+                      }`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground">{item.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">
                         {getRestaurantName(item.restaurant_id)}
                       </p>
-                    </TableCell>
-                    <TableCell>₹{item.price}</TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <span className="text-sm text-muted-foreground">{item.category}</span>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        item.is_available 
-                          ? "bg-swiggy-green-light text-swiggy-green"
-                          : "bg-destructive/10 text-destructive"
-                      }`}>
-                        {item.is_available ? "Available" : "Unavailable"}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(item)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Menu Item?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete "{item.name}".
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(item.id)}
-                                className="bg-destructive hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="font-semibold text-primary">₹{item.price}</span>
+                        <span className="text-xs text-muted-foreground">• {item.category}</span>
+                        {item.is_bestseller && (
+                          <span className="text-xs text-primary">★ Best</span>
+                        )}
                       </div>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      item.is_available 
+                        ? "bg-swiggy-green-light text-swiggy-green"
+                        : "bg-destructive/10 text-destructive"
+                    }`}>
+                      {item.is_available ? "On" : "Off"}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(item)}
+                      className="flex-1"
+                    >
+                      <Pencil className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-destructive border-destructive/50">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Menu Item?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete "{item.name}".
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(item.id)}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block bg-card rounded-lg border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Item</TableHead>
+                  <TableHead className="hidden md:table-cell">Restaurant</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead className="hidden lg:table-cell">Category</TableHead>
+                  <TableHead className="hidden lg:table-cell">Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredItems?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No menu items found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ) : (
+                  filteredItems?.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-3 h-3 border-2 rounded-sm ${
+                            item.is_veg ? "border-swiggy-green" : "border-destructive"
+                          }`}>
+                            <div className={`w-1.5 h-1.5 m-0.5 rounded-full ${
+                              item.is_veg ? "bg-swiggy-green" : "bg-destructive"
+                            }`} />
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{item.name}</p>
+                            {item.is_bestseller && (
+                              <span className="text-xs text-primary">★ Bestseller</span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <p className="text-sm text-muted-foreground">
+                          {getRestaurantName(item.restaurant_id)}
+                        </p>
+                      </TableCell>
+                      <TableCell>₹{item.price}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <span className="text-sm text-muted-foreground">{item.category}</span>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          item.is_available 
+                            ? "bg-swiggy-green-light text-swiggy-green"
+                            : "bg-destructive/10 text-destructive"
+                        }`}>
+                          {item.is_available ? "Available" : "Unavailable"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(item)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Menu Item?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete "{item.name}".
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(item.id)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
     </div>
   );
