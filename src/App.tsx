@@ -5,7 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
+import TopNavBar from "@/components/TopNavBar";
 import MobileTabBar from "@/components/MobileTabBar";
+import OfflineIndicator from "@/components/OfflineIndicator";
 import InstallPrompt from "@/components/InstallPrompt";
 import Index from "./pages/Index";
 import RestaurantPage from "./pages/RestaurantPage";
@@ -35,7 +37,9 @@ const App = () => (
           <Toaster />
           <Sonner position="top-center" />
           <BrowserRouter>
-            <div className="pb-16 md:pb-0">
+            <div className="min-h-screen bg-background pb-16 md:pb-0">
+              <TopNavBar />
+              <OfflineIndicator />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/restaurant/:id" element={<RestaurantPage />} />
