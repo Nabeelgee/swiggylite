@@ -330,6 +330,7 @@ export type Database = {
           default_address: string | null
           default_latitude: number | null
           default_longitude: number | null
+          delivery_partner_id: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -343,6 +344,7 @@ export type Database = {
           default_address?: string | null
           default_latitude?: number | null
           default_longitude?: number | null
+          delivery_partner_id?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -356,6 +358,7 @@ export type Database = {
           default_address?: string | null
           default_latitude?: number | null
           default_longitude?: number | null
+          delivery_partner_id?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -363,7 +366,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_delivery_partner_id_fkey"
+            columns: ["delivery_partner_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       restaurants: {
         Row: {

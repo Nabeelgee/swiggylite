@@ -10,6 +10,7 @@ interface Profile {
   email: string | null;
   avatar_url: string | null;
   default_address: string | null;
+  delivery_partner_id: string | null;
 }
 
 interface AuthContextType {
