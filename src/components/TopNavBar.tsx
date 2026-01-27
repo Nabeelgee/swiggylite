@@ -1,10 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, User, Clock, MapPin, ChevronDown, Heart, Menu, X } from "lucide-react";
+import { Home, Search, User, Clock, MapPin, ChevronDown, Heart, Menu, X, ShoppingBag, Settings } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import GlobalSearch from "./GlobalSearch";
+import Cart from "./Cart";
 import quickbiteLogo from "@/assets/quickbite-logo.png";
 
 interface NavItem {
@@ -15,10 +29,12 @@ interface NavItem {
 
 const TopNavBar: React.FC = () => {
   const location = useLocation();
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const { getTotalItems } = useCart();
   const [scrolled, setScrolled] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const totalItems = getTotalItems();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -108,8 +124,84 @@ const TopNavBar: React.FC = () => {
                 {showSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
               </Button>
 
-              {/* User */}
-              <Link to={user ? "/profile" : "/auth"}>
+              {/* Cart (Desktop) */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="hidden md:flex rounded-full relative">
+                    <ShoppingBag className="w-5 h-5" />
+                    {totalItems > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center animate-scale-in">
+                        {totalItems > 9 ? "9+" : totalItems}
+                      </span>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-md p-0">
+                  <Cart />
+                </SheetContent>
+              </Sheet>
+
+              {/* User Dropdown (Desktop) */}
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="hidden md:flex rounded-full">
+                      {profile?.avatar_url ? (
+                        <img
+                          src={profile.avatar_url}
+                          alt="Profile"
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-5 h-5" />
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="cursor-pointer flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        My Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/orders" className="cursor-pointer flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        My Orders
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/favorites" className="cursor-pointer flex items-center gap-2">
+                        <Heart className="w-4 h-4" />
+                        Favorites
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="cursor-pointer flex items-center gap-2">
+                        <Settings className="w-4 h-4" />
+                        Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => signOut()} 
+                      className="text-destructive cursor-pointer"
+                    >
+                      🚪 Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link to="/auth" className="hidden md:block">
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <User className="w-5 h-5" />
+                  </Button>
+                </Link>
+              )}
+
+              {/* Mobile: Simple User Icon */}
+              <Link to={user ? "/profile" : "/auth"} className="md:hidden">
                 <Button variant="ghost" size="icon" className="rounded-full">
                   {user && profile?.avatar_url ? (
                     <img

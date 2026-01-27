@@ -6,7 +6,6 @@ import { useLiveOrderTracking } from "@/hooks/useLiveOrderTracking";
 import { useRouteETA } from "@/hooks/useRouteETA";
 import { useAuth } from "@/context/AuthContext";
 import { useIsAdmin } from "@/hooks/useAdmin";
-import Header from "@/components/Header";
 import MockMapWithTiles from "@/components/MockMapWithTiles";
 import TrackingDebugPanel from "@/components/TrackingDebugPanel";
 import { Button } from "@/components/ui/button";
@@ -100,7 +99,6 @@ const OrderTrackingPage: React.FC = () => {
   if (!order) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-20 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Order not found</h1>
           <Link to="/orders">
@@ -117,8 +115,6 @@ const OrderTrackingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       <main className="container mx-auto px-4 py-6">
         {/* Back Button & Connection Status */}
         <div className="flex items-center justify-between mb-6">

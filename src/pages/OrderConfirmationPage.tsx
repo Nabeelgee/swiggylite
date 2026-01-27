@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Package, Clock, MapPin, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Header from "@/components/Header";
 import { useOrder } from "@/hooks/useOrders";
 import confetti from "canvas-confetti";
 
@@ -50,8 +49,6 @@ const OrderConfirmationPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       <main className="container mx-auto px-4 py-12 max-w-2xl">
         <div className="text-center animate-fade-in">
           <div className="w-24 h-24 bg-swiggy-green-light rounded-full flex items-center justify-center mx-auto mb-6 animate-scale-in">
