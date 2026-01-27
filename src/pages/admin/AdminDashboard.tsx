@@ -11,13 +11,17 @@ import {
   CheckCircle,
   Truck,
   AlertCircle,
-  MoreHorizontal
+  MoreHorizontal,
+  BarChart3
 } from "lucide-react";
 import { useAllRestaurants, useAllOrders, useAllMenuItems } from "@/hooks/useAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
+import AdminCharts from "@/components/AdminCharts";
+import { DashboardStatsSkeleton, ChartSkeleton } from "@/components/SkeletonLoaders";
 
 const AdminDashboard: React.FC = () => {
   const { data: restaurants, isLoading: restaurantsLoading } = useAllRestaurants();
@@ -125,6 +129,8 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const isLoading = restaurantsLoading || ordersLoading || menuLoading;
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Welcome Section */}
@@ -151,38 +157,38 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <Link key={stat.title} to={stat.link}>
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-card/50 backdrop-blur-sm overflow-hidden relative">
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
-                    <stat.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${stat.iconColor}`} />
+      {isLoading ? (
+        <DashboardStatsSkeleton />
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((stat) => (
+            <Link key={stat.title} to={stat.link}>
+              <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-card/50 backdrop-blur-sm overflow-hidden relative">
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
+                      <stat.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${stat.iconColor}`} />
+                    </div>
+                    <div className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
+                      <ArrowUpRight className="w-3 h-3" />
+                      {stat.trend}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
-                    <ArrowUpRight className="w-3 h-3" />
-                    {stat.trend}
+                  <div>
+                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                      {stat.title}
+                    </p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground mt-1">
+                      {stat.value}
+                    </p>
                   </div>
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                    {stat.title}
-                  </p>
-                  <p className="text-xl sm:text-2xl font-bold text-foreground mt-1">
-                    {restaurantsLoading || ordersLoading || menuLoading ? (
-                      <span className="inline-block w-16 h-7 bg-muted animate-pulse rounded" />
-                    ) : (
-                      stat.value
-                    )}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Order Status Overview */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4">
@@ -220,6 +226,29 @@ const AdminDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tabbed Content - Charts & Orders */}
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="overview" className="gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="orders" className="gap-2">
+            <Package className="w-4 h-4" />
+            Recent Orders
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-0">
+          {isLoading ? (
+            <ChartSkeleton />
+          ) : (
+            <AdminCharts orders={orders || []} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="orders" className="mt-0">
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Orders */}
@@ -295,91 +324,93 @@ const AdminDashboard: React.FC = () => {
                   })}
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Quick Actions */}
-        <div>
-          <Card className="border-0 bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Link to="/admin/restaurants" className="block">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-between h-auto py-4 px-4 bg-gradient-to-r from-blue-500/5 to-transparent border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                      <Store className="w-5 h-5 text-blue-500" />
+          {/* Quick Actions */}
+          <div>
+            <Card className="border-0 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Link to="/admin/restaurants" className="block">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-between h-auto py-4 px-4 bg-gradient-to-r from-blue-500/5 to-transparent border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                        <Store className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-foreground">Add Restaurant</p>
+                        <p className="text-xs text-muted-foreground">Create new listing</p>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <p className="font-medium text-foreground">Add Restaurant</p>
-                      <p className="text-xs text-muted-foreground">Create new listing</p>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                </Link>
+
+                <Link to="/admin/menu" className="block">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-between h-auto py-4 px-4 bg-gradient-to-r from-emerald-500/5 to-transparent border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                        <UtensilsCrossed className="w-5 h-5 text-emerald-500" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-foreground">Add Menu Item</p>
+                        <p className="text-xs text-muted-foreground">Add dishes to menu</p>
+                      </div>
                     </div>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                </Link>
+
+                <Link to="/admin/simulator" className="block">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-between h-auto py-4 px-4 bg-gradient-to-r from-violet-500/5 to-transparent border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                        <Truck className="w-5 h-5 text-violet-500" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-foreground">Test Tracking</p>
+                        <p className="text-xs text-muted-foreground">Simulate delivery</p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Pro Tip Card */}
+            <Card className="mt-4 border-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                    <span className="text-lg">💡</span>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                </Button>
-              </Link>
-
-              <Link to="/admin/menu" className="block">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-between h-auto py-4 px-4 bg-gradient-to-r from-emerald-500/5 to-transparent border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                      <UtensilsCrossed className="w-5 h-5 text-emerald-500" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium text-foreground">Add Menu Item</p>
-                      <p className="text-xs text-muted-foreground">Add dishes to menu</p>
-                    </div>
+                  <div>
+                    <p className="font-medium text-foreground text-sm">Pro Tip</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Use the simulator to test your delivery tracking before going live with real orders.
+                    </p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                </Button>
-              </Link>
-
-              <Link to="/admin/simulator" className="block">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-between h-auto py-4 px-4 bg-gradient-to-r from-violet-500/5 to-transparent border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-900/20"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                      <Truck className="w-5 h-5 text-violet-500" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium text-foreground">Test Tracking</p>
-                      <p className="text-xs text-muted-foreground">Simulate delivery</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Pro Tip Card */}
-          <Card className="mt-4 border-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                  <span className="text-lg">💡</span>
                 </div>
-                <div>
-                  <p className="font-medium text-foreground text-sm">Pro Tip</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Use the simulator to test your delivery tracking before going live with real orders.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

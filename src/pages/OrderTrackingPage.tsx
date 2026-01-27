@@ -6,7 +6,7 @@ import { useLiveOrderTracking } from "@/hooks/useLiveOrderTracking";
 import { useRouteETA } from "@/hooks/useRouteETA";
 import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
-import MockDeliveryMap from "@/components/MockDeliveryMap";
+import MockMapWithTiles from "@/components/MockMapWithTiles";
 import TrackingDebugPanel from "@/components/TrackingDebugPanel";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -169,7 +169,7 @@ const OrderTrackingPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <MockDeliveryMap
+                <MockMapWithTiles
                   restaurantLocation={{ lat: 12.9352, lng: 77.6245 }}
                   deliveryLocation={deliveryLocation || undefined}
                   deliveryPartnerLocation={effectivePartnerLocation || undefined}
@@ -178,6 +178,7 @@ const OrderTrackingPage: React.FC = () => {
                   partnerName={partner?.name}
                   orderStatus={order.status}
                   eta={eta}
+                  zoom={15}
                 />
 
                 {/* Admin Debug Panel */}
