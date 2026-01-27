@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
+import { useOSRMRoute } from "@/hooks/useOSRMRoute";
 import type { Database } from "@/integrations/supabase/types";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
@@ -15,6 +16,7 @@ interface MockMapWithTilesProps {
   interactive?: boolean;
   onLocationSelect?: (lat: number, lng: number) => void;
   zoom?: number;
+  showRoute?: boolean;
 }
 
 // Mercator projection helpers
@@ -33,6 +35,7 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
   interactive = false,
   onLocationSelect,
   zoom = 15,
+  showRoute = true,
 }) => {
   const [animatedPartner, setAnimatedPartner] = useState(deliveryPartnerLocation);
   const previousPosRef = useRef(deliveryPartnerLocation);
@@ -40,6 +43,18 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 400, height: 300 });
   const velocityRef = useRef({ lat: 0, lng: 0 });
+
+  // Fetch OSRM route from restaurant to delivery
+  const { route: fullRoute } = useOSRMRoute(
+    showRoute ? restaurantLocation : null,
+    showRoute ? deliveryLocation : null
+  );
+
+  // Fetch OSRM route from partner to delivery (for progress)
+  const { route: partnerRoute } = useOSRMRoute(
+    showRoute && animatedPartner ? animatedPartner : null,
+    showRoute ? deliveryLocation : null
+  );
 
   // Observe container size
   useEffect(() => {
@@ -243,34 +258,72 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
         ))}
       </div>
 
-      {/* Route line */}
+      {/* OSRM Route line - actual road path */}
       {restaurantPixel && deliveryPixel && (
         <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 5 }}>
-          {/* Background path */}
-          <path
-            d={`M ${restaurantPixel.x} ${restaurantPixel.y} ${
-              partnerPixel
-                ? `Q ${(restaurantPixel.x + deliveryPixel.x) / 2} ${
-                    Math.min(restaurantPixel.y, deliveryPixel.y) - 30
-                  } ${partnerPixel.x} ${partnerPixel.y} T`
-                : "L"
-            } ${deliveryPixel.x} ${deliveryPixel.y}`}
-            stroke="hsl(28, 97%, 54%)"
-            strokeWidth="4"
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={orderStatus === "on_the_way" ? "none" : "8 8"}
-            opacity="0.6"
-          />
-          {/* Progress line */}
-          {partnerPixel && (
+          {/* Full route path (from restaurant to delivery) */}
+          {fullRoute?.geometry ? (
             <path
-              d={`M ${restaurantPixel.x} ${restaurantPixel.y} L ${partnerPixel.x} ${partnerPixel.y}`}
-              stroke="hsl(28, 97%, 54%)"
+              d={fullRoute.geometry
+                .map((coord, i) => {
+                  const pixel = latLngToPixel(coord[1], coord[0]); // OSRM returns [lng, lat]
+                  return `${i === 0 ? "M" : "L"} ${pixel.x} ${pixel.y}`;
+                })
+                .join(" ")}
+              stroke="hsl(var(--primary) / 0.4)"
+              strokeWidth="6"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ) : (
+            /* Fallback straight line if no route */
+            <path
+              d={`M ${restaurantPixel.x} ${restaurantPixel.y} L ${deliveryPixel.x} ${deliveryPixel.y}`}
+              stroke="hsl(var(--primary) / 0.3)"
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray="8 8"
+            />
+          )}
+
+          {/* Remaining route path (from partner to delivery) - highlighted */}
+          {partnerRoute?.geometry && partnerPixel && (
+            <path
+              d={partnerRoute.geometry
+                .map((coord, i) => {
+                  const pixel = latLngToPixel(coord[1], coord[0]);
+                  return `${i === 0 ? "M" : "L"} ${pixel.x} ${pixel.y}`;
+                })
+                .join(" ")}
+              stroke="hsl(var(--primary))"
               strokeWidth="5"
               fill="none"
               strokeLinecap="round"
+              strokeLinejoin="round"
+              className={orderStatus === "on_the_way" ? "animate-pulse" : ""}
             />
+          )}
+
+          {/* Completed path indicator dots */}
+          {fullRoute?.geometry && partnerPixel && (
+            <>
+              {fullRoute.geometry.slice(0, Math.floor(fullRoute.geometry.length * 0.3)).map((coord, i) => {
+                if (i % 5 !== 0) return null;
+                const pixel = latLngToPixel(coord[1], coord[0]);
+                return (
+                  <circle
+                    key={i}
+                    cx={pixel.x}
+                    cy={pixel.y}
+                    r="3"
+                    fill="hsl(142, 76%, 36%)"
+                    opacity="0.7"
+                  />
+                );
+              })}
+            </>
           )}
         </svg>
       )}
