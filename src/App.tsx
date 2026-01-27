@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import MobileTabBar from "@/components/MobileTabBar";
+import InstallPrompt from "@/components/InstallPrompt";
 import Index from "./pages/Index";
 import RestaurantPage from "./pages/RestaurantPage";
 import AuthPage from "./pages/AuthPage";
@@ -57,6 +58,7 @@ const App = () => (
               </Routes>
             </div>
             <MobileTabBar />
+            <InstallPrompt />
           </BrowserRouter>
         </CartProvider>
       </AuthProvider>
