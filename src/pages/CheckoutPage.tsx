@@ -1,10 +1,9 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Check } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useCreateOrder } from "@/hooks/useOrders";
-import Header from "@/components/Header";
 import SimpleLocationPicker from "@/components/SimpleLocationPicker";
 import MockMapWithTiles from "@/components/MockMapWithTiles";
 import { Button } from "@/components/ui/button";
@@ -105,8 +104,6 @@ const CheckoutPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       <main className="container mx-auto px-4 py-6 max-w-4xl">
         <button
           onClick={() => navigate(-1)}
