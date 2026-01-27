@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { ChevronDown } from "lucide-react";
 import { useRestaurants } from "@/hooks/useRestaurants";
+import { useDeliveryLocation } from "@/context/LocationContext";
 import RestaurantCard from "./RestaurantCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +17,7 @@ const filters = [
 const RestaurantList: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState("Relevance");
   const [showVegOnly, setShowVegOnly] = useState(false);
+  const { selectedLocation } = useDeliveryLocation();
   
   const { data: restaurants, isLoading, error } = useRestaurants();
 
@@ -25,6 +27,17 @@ const RestaurantList: React.FC = () => {
     let filtered = showVegOnly
       ? restaurants.filter((r) => r.is_veg)
       : restaurants;
+
+    // Filter by location if specified
+    if (selectedLocation.trim()) {
+      const locationLower = selectedLocation.toLowerCase().trim();
+      filtered = filtered.filter((r) => {
+        const name = r.name?.toLowerCase() || "";
+        const address = r.address?.toLowerCase() || "";
+        const cuisines = r.cuisines?.join(" ").toLowerCase() || "";
+        return name.includes(locationLower) || address.includes(locationLower) || cuisines.includes(locationLower);
+      });
+    }
 
     // Sort based on active filter
     switch (activeFilter) {
@@ -57,11 +70,11 @@ const RestaurantList: React.FC = () => {
       default:
         return filtered;
     }
-  }, [restaurants, showVegOnly, activeFilter]);
+  }, [restaurants, showVegOnly, activeFilter, selectedLocation]);
 
   if (error) {
     return (
-      <section className="py-6 sm:py-8 bg-secondary/30">
+      <section className="py-6 sm:py-8 bg-secondary/30" data-section="restaurants">
         <div className="container mx-auto px-4">
           <div className="text-center py-12">
             <p className="text-destructive text-lg">Failed to load restaurants</p>
@@ -72,12 +85,14 @@ const RestaurantList: React.FC = () => {
   }
 
   return (
-    <section className="py-6 sm:py-8 bg-secondary/30">
+    <section className="py-6 sm:py-8 bg-secondary/30" data-section="restaurants">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-            Restaurants with online food delivery
+            {selectedLocation.trim() 
+              ? `Restaurants in ${selectedLocation}` 
+              : "Restaurants with online food delivery"}
           </h2>
         </div>
 
@@ -147,7 +162,9 @@ const RestaurantList: React.FC = () => {
         {!isLoading && filteredAndSortedRestaurants.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground text-lg">
-              No restaurants found matching your criteria
+              {selectedLocation.trim() 
+                ? `No restaurants found in "${selectedLocation}". Try a different location.`
+                : "No restaurants found matching your criteria"}
             </p>
           </div>
         )}
