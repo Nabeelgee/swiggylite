@@ -27,6 +27,7 @@ import AdminRestaurants from "./pages/admin/AdminRestaurants";
 import AdminMenuItems from "./pages/admin/AdminMenuItems";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminDeliverySimulator from "./pages/admin/AdminDeliverySimulator";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
                     <Route path="restaurants" element={<AdminRestaurants />} />
                     <Route path="menu" element={<AdminMenuItems />} />
                     <Route path="orders" element={<AdminOrders />} />
+                    <Route path="users" element={<AdminUsers />} />
                     <Route path="simulator" element={<AdminDeliverySimulator />} />
                   </Route>
                   <Route path="*" element={<NotFound />} />
