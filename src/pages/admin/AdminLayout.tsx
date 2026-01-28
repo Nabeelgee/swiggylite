@@ -6,6 +6,7 @@ import {
   UtensilsCrossed, 
   Package, 
   Truck,
+  Users,
   LogOut,
   Menu,
   X,
@@ -28,6 +29,7 @@ const navItems = [
   { icon: Store, label: "Restaurants", path: "/admin/restaurants", badge: null },
   { icon: UtensilsCrossed, label: "Menu Items", path: "/admin/menu", badge: null },
   { icon: Package, label: "Orders", path: "/admin/orders", badge: "orders" },
+  { icon: Users, label: "Users", path: "/admin/users", badge: null },
   { icon: Truck, label: "Simulator", path: "/admin/simulator", badge: null },
 ];
 
