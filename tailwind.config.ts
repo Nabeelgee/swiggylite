@@ -50,11 +50,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        swiggy: {
-          orange: "hsl(var(--swiggy-orange))",
-          "orange-light": "hsl(var(--swiggy-orange-light))",
-          green: "hsl(var(--swiggy-green))",
-          "green-light": "hsl(var(--swiggy-green-light))",
+        zepto: {
+          purple: "hsl(var(--zepto-purple))",
+          "purple-light": "hsl(var(--zepto-purple-light))",
+          green: "hsl(var(--zepto-green))",
+          "green-light": "hsl(var(--zepto-green-light))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
