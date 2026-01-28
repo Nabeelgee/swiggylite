@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, User, Clock, Heart, ShoppingBag, Settings, X, Moon, Sun } from "lucide-react";
+import { Home, Search, User, Clock, Heart, ShoppingBag, Settings, X, Moon, Sun, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useTheme } from "@/hooks/useTheme";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -23,6 +24,7 @@ const TopNavBar: React.FC = () => {
   const { user, profile, signOut } = useAuth();
   const { getTotalItems } = useCart();
   const { theme, toggleTheme } = useTheme();
+  const { data: isAdmin } = useIsAdmin();
   const [scrolled, setScrolled] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const totalItems = getTotalItems();
@@ -158,13 +160,17 @@ const TopNavBar: React.FC = () => {
                         Favorites
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin" className="cursor-pointer flex items-center gap-2">
-                        <Settings className="w-4 h-4" />
-                        Admin Panel
-                      </Link>
-                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="cursor-pointer flex items-center gap-2">
+                            <Shield className="w-4 h-4" />
+                            Admin Panel
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => signOut()} className="text-destructive cursor-pointer">
                       🚪 Sign Out
