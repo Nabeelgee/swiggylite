@@ -15,7 +15,8 @@ import {
   Wifi,
   WifiOff,
   Locate,
-  Route
+  Route,
+  MessageCircle
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ import { useGPSTracking } from "@/hooks/useGPSTracking";
 import { useNavigationInstructions } from "@/hooks/useNavigationInstructions";
 import NavigationInstructions from "@/components/NavigationInstructions";
 import RouteOptimizer from "@/components/RouteOptimizer";
+import OrderChat from "@/components/OrderChat";
 import type { Database } from "@/integrations/supabase/types";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
@@ -208,7 +210,7 @@ const OrderCardWithNavigation: React.FC<OrderCardWithNavigationProps> = ({
           )}
         </div>
 
-        {/* Order Info */}
+        {/* Order Info & Chat */}
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="w-4 h-4" />
@@ -216,9 +218,17 @@ const OrderCardWithNavigation: React.FC<OrderCardWithNavigationProps> = ({
               {format(new Date(order.created_at), "h:mm a")}
             </span>
           </div>
-          <p className="font-semibold text-foreground">
-            ₹{order.total_amount}
-          </p>
+          <div className="flex items-center gap-2">
+            <OrderChat 
+              orderId={order.id} 
+              senderType="partner" 
+              partnerName="Customer"
+              className="w-8 h-8"
+            />
+            <p className="font-semibold text-foreground">
+              ₹{order.total_amount}
+            </p>
+          </div>
         </div>
 
         {/* Action Button */}

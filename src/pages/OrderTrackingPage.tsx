@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Star, Clock, MapPin, Package, ChefHat, Bike, CheckCircle2, XCircle, Wifi, WifiOff, Navigation, MessageCircle, HelpCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Phone, Star, Clock, MapPin, Package, ChefHat, Bike, CheckCircle2, XCircle, Wifi, WifiOff, Navigation, HelpCircle, RefreshCw } from "lucide-react";
 import { useOrder, useOrderItems } from "@/hooks/useOrders";
 import { useLiveOrderTracking } from "@/hooks/useLiveOrderTracking";
 import { useRouteETA } from "@/hooks/useRouteETA";
@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import MockMapWithTiles from "@/components/MockMapWithTiles";
 import TrackingDebugPanel from "@/components/TrackingDebugPanel";
+import OrderChat from "@/components/OrderChat";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
@@ -252,9 +253,12 @@ const OrderTrackingPage: React.FC = () => {
                       <Phone className="w-4 h-4" />
                     </Button>
                   </a>
-                  <Button size="icon" variant="outline" className="rounded-full w-9 h-9">
-                    <MessageCircle className="w-4 h-4" />
-                  </Button>
+                  <OrderChat 
+                    orderId={orderId || ""} 
+                    senderType="customer" 
+                    partnerName={partner.name}
+                    className="w-9 h-9"
+                  />
                 </div>
               </div>
             </div>
@@ -589,10 +593,14 @@ const OrderTrackingPage: React.FC = () => {
                       Call
                     </Button>
                   </a>
-                  <Button variant="outline" className="flex-1 rounded-xl gap-2">
-                    <MessageCircle className="w-4 h-4" />
-                    Chat
-                  </Button>
+                  <div className="flex-1">
+                    <OrderChat 
+                      orderId={orderId || ""} 
+                      senderType="customer" 
+                      partnerName={partner.name}
+                      className="w-full rounded-xl h-10"
+                    />
+                  </div>
                 </div>
               </div>
             )}
