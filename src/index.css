@@ -6,103 +6,103 @@
 
 @layer base {
   :root {
-    --background: 30 25% 98%;
-    --foreground: 20 20% 15%;
+    --background: 270 20% 98%;
+    --foreground: 270 15% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 20 20% 15%;
+    --card-foreground: 270 15% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 20 20% 15%;
+    --popover-foreground: 270 15% 10%;
 
-    --primary: 24 95% 53%;
+    --primary: 280 85% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 20% 95%;
-    --secondary-foreground: 20 20% 15%;
+    --secondary: 270 20% 95%;
+    --secondary-foreground: 270 15% 10%;
 
-    --muted: 30 15% 94%;
-    --muted-foreground: 20 10% 45%;
+    --muted: 270 15% 94%;
+    --muted-foreground: 270 10% 45%;
 
-    --accent: 16 90% 50%;
+    --accent: 300 75% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 15% 88%;
-    --input: 30 15% 88%;
-    --ring: 24 95% 53%;
+    --border: 270 15% 88%;
+    --input: 270 15% 88%;
+    --ring: 280 85% 55%;
 
     --radius: 1rem;
 
-    /* Custom QuickBite colors */
-    --quickbite-orange: 24 95% 53%;
-    --quickbite-coral: 16 90% 55%;
-    --quickbite-peach: 30 100% 96%;
+    /* Custom QuickBite colors - Zepto purple theme */
+    --quickbite-purple: 280 85% 55%;
+    --quickbite-violet: 300 75% 50%;
+    --quickbite-lavender: 270 100% 96%;
     --quickbite-green: 158 64% 42%;
     --quickbite-green-light: 158 64% 94%;
-    --quickbite-text-dark: 20 20% 15%;
-    --quickbite-text-light: 20 10% 45%;
-    --quickbite-bg: 30 25% 98%;
-    --quickbite-card-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.08);
-    --quickbite-card-shadow-hover: 0 12px 40px -8px rgba(0, 0, 0, 0.15);
+    --quickbite-text-dark: 270 15% 10%;
+    --quickbite-text-light: 270 10% 45%;
+    --quickbite-bg: 270 20% 98%;
+    --quickbite-card-shadow: 0 4px 24px -4px rgba(100, 50, 150, 0.1);
+    --quickbite-card-shadow-hover: 0 12px 40px -8px rgba(100, 50, 150, 0.2);
 
-    /* Swiggy compatibility colors */
-    --swiggy-orange: 24 95% 53%;
-    --swiggy-orange-light: 30 100% 96%;
-    --swiggy-green: 158 64% 42%;
-    --swiggy-green-light: 158 64% 94%;
-    --swiggy-card-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.08);
-    --swiggy-card-shadow-hover: 0 12px 40px -8px rgba(0, 0, 0, 0.15);
+    /* Zepto-style colors */
+    --zepto-purple: 280 85% 55%;
+    --zepto-purple-light: 270 100% 96%;
+    --zepto-green: 158 64% 42%;
+    --zepto-green-light: 158 64% 94%;
+    --zepto-card-shadow: 0 4px 24px -4px rgba(100, 50, 150, 0.1);
+    --zepto-card-shadow-hover: 0 12px 40px -8px rgba(100, 50, 150, 0.2);
 
-    --sidebar-background: 30 25% 98%;
-    --sidebar-foreground: 20 20% 15%;
-    --sidebar-primary: 24 95% 53%;
+    --sidebar-background: 270 20% 98%;
+    --sidebar-foreground: 270 15% 10%;
+    --sidebar-primary: 280 85% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 30 100% 96%;
-    --sidebar-accent-foreground: 20 20% 15%;
-    --sidebar-border: 30 15% 88%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-accent: 270 100% 96%;
+    --sidebar-accent-foreground: 270 15% 10%;
+    --sidebar-border: 270 15% 88%;
+    --sidebar-ring: 280 85% 55%;
   }
 
   .dark {
-    --background: 20 15% 8%;
-    --foreground: 30 15% 95%;
+    --background: 270 15% 8%;
+    --foreground: 270 15% 95%;
 
-    --card: 20 15% 12%;
-    --card-foreground: 30 15% 95%;
+    --card: 270 15% 12%;
+    --card-foreground: 270 15% 95%;
 
-    --popover: 20 15% 12%;
-    --popover-foreground: 30 15% 95%;
+    --popover: 270 15% 12%;
+    --popover-foreground: 270 15% 95%;
 
-    --primary: 24 95% 53%;
+    --primary: 280 85% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 20 15% 18%;
-    --secondary-foreground: 30 15% 95%;
+    --secondary: 270 15% 18%;
+    --secondary-foreground: 270 15% 95%;
 
-    --muted: 20 15% 18%;
-    --muted-foreground: 30 10% 60%;
+    --muted: 270 15% 18%;
+    --muted-foreground: 270 10% 60%;
 
-    --accent: 16 90% 55%;
+    --accent: 300 75% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 20 15% 22%;
-    --input: 20 15% 22%;
-    --ring: 24 95% 53%;
+    --border: 270 15% 22%;
+    --input: 270 15% 22%;
+    --ring: 280 85% 60%;
 
-    --sidebar-background: 20 15% 10%;
-    --sidebar-foreground: 30 15% 95%;
-    --sidebar-primary: 24 95% 53%;
+    --sidebar-background: 270 15% 10%;
+    --sidebar-foreground: 270 15% 95%;
+    --sidebar-primary: 280 85% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 20 15% 18%;
-    --sidebar-accent-foreground: 30 15% 95%;
-    --sidebar-border: 20 15% 22%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-accent: 270 15% 18%;
+    --sidebar-accent-foreground: 270 15% 95%;
+    --sidebar-border: 270 15% 22%;
+    --sidebar-ring: 280 85% 60%;
   }
 }
 
@@ -126,12 +126,12 @@
 }
 
 @layer utilities {
-  .swiggy-shadow {
-    box-shadow: var(--swiggy-card-shadow);
+  .zepto-shadow {
+    box-shadow: var(--zepto-card-shadow);
   }
 
-  .swiggy-shadow-hover {
-    box-shadow: var(--swiggy-card-shadow-hover);
+  .zepto-shadow-hover {
+    box-shadow: var(--zepto-card-shadow-hover);
   }
 
   .line-clamp-1 {
