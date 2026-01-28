@@ -54,8 +54,23 @@ const RestaurantPage: React.FC = () => {
       }
       categories[item.category].push(item);
     });
+    
+    // Sort items within each category: bestsellers first, then by name
+    Object.keys(categories).forEach(category => {
+      categories[category].sort((a, b) => {
+        if (a.is_bestseller && !b.is_bestseller) return -1;
+        if (!a.is_bestseller && b.is_bestseller) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    });
+    
     return categories;
   }, [filteredMenuItems]);
+
+  // Get sorted category names for consistent top-to-bottom display
+  const sortedCategories = useMemo(() => {
+    return Object.keys(categorizedMenu).sort((a, b) => a.localeCompare(b));
+  }, [categorizedMenu]);
 
   if (restaurantLoading) {
     return (
@@ -185,40 +200,43 @@ const RestaurantPage: React.FC = () => {
               </p>
             </div>
           ) : (
-            Object.entries(categorizedMenu).map(([category, items], index) => (
-              <div
-                key={category}
-                className="mb-8 animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <h2 className="text-lg sm:text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  {category}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    ({items.length} items)
-                  </span>
-                </h2>
-                
-                <div className="bg-card rounded-2xl swiggy-shadow p-4 sm:p-6">
-                  {items.map((item) => (
-                    <MenuItem
-                      key={item.id}
-                      item={{
-                        id: item.id,
-                        name: item.name,
-                        description: item.description || "",
-                        price: item.price,
-                        image: item.image_url || undefined,
-                        isVeg: item.is_veg ?? true,
-                        isBestseller: item.is_bestseller ?? false,
-                        category: item.category,
-                      }}
-                      restaurantId={restaurant.id}
-                      restaurantName={restaurant.name}
-                    />
-                  ))}
+            sortedCategories.map((category, index) => {
+              const items = categorizedMenu[category];
+              return (
+                <div
+                  key={category}
+                  className="mb-8 animate-fade-in"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <h2 className="text-lg sm:text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                    {category}
+                    <span className="text-sm font-normal text-muted-foreground">
+                      ({items.length} items)
+                    </span>
+                  </h2>
+                  
+                  <div className="bg-card rounded-2xl swiggy-shadow p-4 sm:p-6">
+                    {items.map((item) => (
+                      <MenuItem
+                        key={item.id}
+                        item={{
+                          id: item.id,
+                          name: item.name,
+                          description: item.description || "",
+                          price: item.price,
+                          image: item.image_url || undefined,
+                          isVeg: item.is_veg ?? true,
+                          isBestseller: item.is_bestseller ?? false,
+                          category: item.category,
+                        }}
+                        restaurantId={restaurant.id}
+                        restaurantName={restaurant.name}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </main>
