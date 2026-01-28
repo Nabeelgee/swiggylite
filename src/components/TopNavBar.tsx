@@ -41,6 +41,7 @@ const TopNavBar: React.FC = () => {
     { icon: Home, label: "Home", path: "/" },
     { icon: Heart, label: "Favorites", path: "/favorites" },
     { icon: Clock, label: "Orders", path: "/orders" },
+    ...(isAdmin ? [{ icon: Shield, label: "Admin", path: "/admin" }] : []),
   ];
 
   // Hide on certain pages
