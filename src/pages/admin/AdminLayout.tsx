@@ -14,7 +14,9 @@ import {
   Search,
   Moon,
   Sun,
-  Home
+  Home,
+  BarChart3,
+  UserCog
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useIsAdmin, useAllOrders } from "@/hooks/useAdmin";
@@ -30,6 +32,8 @@ const navItems = [
   { icon: UtensilsCrossed, label: "Menu Items", path: "/admin/menu", badge: null },
   { icon: Package, label: "Orders", path: "/admin/orders", badge: "orders" },
   { icon: Users, label: "Users", path: "/admin/users", badge: null },
+  { icon: BarChart3, label: "Reports", path: "/admin/reports", badge: null },
+  { icon: UserCog, label: "Delivery Partners", path: "/admin/partners", badge: null },
   { icon: Truck, label: "Simulator", path: "/admin/simulator", badge: null },
 ];
 

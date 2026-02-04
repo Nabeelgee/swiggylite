@@ -28,6 +28,8 @@ import AdminMenuItems from "./pages/admin/AdminMenuItems";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminDeliverySimulator from "./pages/admin/AdminDeliverySimulator";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminReports from "./pages/admin/AdminReports";
+import AdminDeliveryPartners from "./pages/admin/AdminDeliveryPartners";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +62,8 @@ const App = () => (
                     <Route path="menu" element={<AdminMenuItems />} />
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="users" element={<AdminUsers />} />
+                    <Route path="reports" element={<AdminReports />} />
+                    <Route path="partners" element={<AdminDeliveryPartners />} />
                     <Route path="simulator" element={<AdminDeliverySimulator />} />
                   </Route>
                   <Route path="*" element={<NotFound />} />

@@ -5,6 +5,7 @@ import CategoryCarousel from "@/components/CategoryCarousel";
 import RestaurantList from "@/components/RestaurantList";
 import Footer from "@/components/Footer";
 import PullToRefresh from "@/components/PullToRefresh";
+import FloatingCallButton from "@/components/FloatingCallButton";
 
 const Index: React.FC = () => {
   const queryClient = useQueryClient();
@@ -26,6 +27,7 @@ const Index: React.FC = () => {
         </main>
         <Footer />
       </PullToRefresh>
+      <FloatingCallButton phoneNumber="9585077437" />
     </div>
   );
 };
