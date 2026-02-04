@@ -53,7 +53,9 @@ export type Database = {
           created_at: string
           current_latitude: number | null
           current_longitude: number | null
+          employment_type: string | null
           id: string
+          incentive_rate: number | null
           is_available: boolean | null
           name: string
           phone: string
@@ -66,7 +68,9 @@ export type Database = {
           created_at?: string
           current_latitude?: number | null
           current_longitude?: number | null
+          employment_type?: string | null
           id?: string
+          incentive_rate?: number | null
           is_available?: boolean | null
           name: string
           phone: string
@@ -79,7 +83,9 @@ export type Database = {
           created_at?: string
           current_latitude?: number | null
           current_longitude?: number | null
+          employment_type?: string | null
           id?: string
+          incentive_rate?: number | null
           is_available?: boolean | null
           name?: string
           phone?: string
