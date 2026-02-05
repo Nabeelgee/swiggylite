@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Eye, UserPlus, Download, FileText } from "lucide-react";
+import { Search, Eye, UserPlus, Download, FileText, Image } from "lucide-react";
 import { useAllOrders, useUpdateOrderStatus } from "@/hooks/useAdmin";
 import { useAvailableDeliveryPartners, useAssignDeliveryPartner, useOrderTrackingInfo } from "@/hooks/useDeliveryPartners";
 import { Button } from "@/components/ui/button";
@@ -351,6 +351,7 @@ const AdminOrders: React.FC = () => {
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden lg:table-cell">Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Payment</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -441,6 +442,37 @@ const AdminOrders: React.FC = () => {
                           <FileText className="w-4 h-4" />
                         </Button>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {(order as any).payment_screenshot_url ? (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="relative" title="View Payment Screenshot">
+                              <Image className="w-4 h-4 text-swiggy-green" />
+                              <span className="absolute -top-1 -right-1 w-2 h-2 bg-swiggy-green rounded-full" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Payment Screenshot</DialogTitle>
+                              <DialogDescription>
+                                Order #{order.id.slice(0, 8)} • {order.special_instructions?.includes("Google Pay") ? "GPay" : "Payment"}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="mt-4">
+                              <img 
+                                src={(order as any).payment_screenshot_url} 
+                                alt="Payment Screenshot" 
+                                className="w-full rounded-lg border"
+                              />
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          {order.special_instructions?.includes("Google Pay") ? "Pending" : "COD"}
+                        </span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

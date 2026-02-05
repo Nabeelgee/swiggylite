@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingBag, Trash2, Plus, Minus, ArrowRight, MapPin, User, Phone, CreditCard, Banknote, Loader2 } from "lucide-react";
+import { ShoppingBag, Trash2, Plus, Minus, ArrowRight, MapPin, User, Phone, CreditCard, Banknote, Loader2, QrCode } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -233,24 +233,48 @@ const Cart: React.FC = () => {
             <div className="space-y-3">
               <Label className="text-base font-semibold">Payment Method</Label>
               <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "gpay" | "cod")}>
-                <div className={`flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${paymentMethod === "gpay" ? "border-primary bg-primary/5" : "border-border"}`}>
-                  <RadioGroupItem value="gpay" id="gpay" />
-                  <Label htmlFor="gpay" className="flex items-center gap-3 cursor-pointer flex-1">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-red-500 to-yellow-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-xs">G</span>
+                <div className={`flex flex-col p-4 rounded-xl border-2 transition-all cursor-pointer ${paymentMethod === "gpay" ? "border-primary bg-primary/5" : "border-border"}`}>
+                  <div className="flex items-center space-x-3">
+                    <RadioGroupItem value="gpay" id="gpay" />
+                    <Label htmlFor="gpay" className="flex items-center gap-3 cursor-pointer flex-1">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-red-500 to-yellow-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-bold text-xs">G</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Google Pay</p>
+                        <p className="text-xs text-muted-foreground">UPI: 9360646541@slc</p>
+                      </div>
+                    </Label>
+                  </div>
+                  
+                  {paymentMethod === "gpay" && (
+                    <div className="mt-4 p-4 bg-card rounded-xl border border-border">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-2 text-primary">
+                          <QrCode className="w-5 h-5" />
+                          <span className="font-medium text-sm">Scan to Pay</span>
+                        </div>
+                        <div className="bg-card p-3 rounded-lg shadow-sm border border-border">
+                          <img 
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=9360646541@slc%26pn=QuickBite%26am=${grandTotal}%26cu=INR`}
+                            alt="GPay QR Code"
+                            className="w-44 h-44"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-lg font-bold text-foreground">₹{grandTotal}</p>
+                          <p className="text-xs text-muted-foreground">Pay to: 9360646541@slc</p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">Google Pay</p>
-                      <p className="text-xs text-muted-foreground">UPI: 9360646541@slc</p>
-                    </div>
-                  </Label>
+                  )}
                 </div>
                 
                 <div className={`flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border"}`}>
                   <RadioGroupItem value="cod" id="cod" />
                   <Label htmlFor="cod" className="flex items-center gap-3 cursor-pointer flex-1">
-                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                      <Banknote className="w-5 h-5 text-green-600" />
+                    <div className="w-10 h-10 bg-swiggy-green-light rounded-lg flex items-center justify-center">
+                      <Banknote className="w-5 h-5 text-swiggy-green" />
                     </div>
                     <div>
                       <p className="font-medium text-foreground">Cash on Delivery</p>

@@ -314,6 +314,7 @@ export type Database = {
           delivery_longitude: number | null
           estimated_delivery_time: string | null
           id: string
+          payment_screenshot_url: string | null
           platform_fee: number | null
           restaurant_id: string | null
           restaurant_name: string
@@ -331,6 +332,7 @@ export type Database = {
           delivery_longitude?: number | null
           estimated_delivery_time?: string | null
           id?: string
+          payment_screenshot_url?: string | null
           platform_fee?: number | null
           restaurant_id?: string | null
           restaurant_name: string
@@ -348,6 +350,7 @@ export type Database = {
           delivery_longitude?: number | null
           estimated_delivery_time?: string | null
           id?: string
+          payment_screenshot_url?: string | null
           platform_fee?: number | null
           restaurant_id?: string | null
           restaurant_name?: string
