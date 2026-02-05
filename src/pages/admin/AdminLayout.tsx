@@ -115,10 +115,10 @@ const AdminLayout: React.FC = () => {
           <div className="flex items-center justify-between">
             <Link to="/admin" className="flex items-center gap-3 group">
               <div className="w-11 h-11 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg shadow-primary/25 group-hover:shadow-primary/40 transition-shadow">
-                <span className="text-primary-foreground text-xl font-bold">S</span>
+                <span className="text-primary-foreground text-xl font-bold">Q</span>
               </div>
               <div>
-                <span className="font-bold text-lg text-foreground">Swiggy</span>
+                <span className="font-bold text-lg text-foreground">QuickBite</span>
                 <span className="text-xs text-primary font-medium block">Admin Console</span>
               </div>
             </Link>
@@ -298,7 +298,7 @@ const AdminLayout: React.FC = () => {
 
         {/* Footer */}
         <footer className="border-t border-border/50 px-4 lg:px-6 py-4 text-center text-sm text-muted-foreground">
-          <p>© 2024 Swiggy Admin. All rights reserved.</p>
+          <p>© 2024 QuickBite Admin. All rights reserved.</p>
         </footer>
       </div>
     </div>
