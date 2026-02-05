@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   BarChart, 
   Bar, 
@@ -22,9 +23,11 @@ import {
   Calendar, 
   DollarSign, 
   ShoppingBag,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Download
 } from "lucide-react";
 import { format, subDays, startOfDay, startOfWeek, startOfMonth } from "date-fns";
+import { toast } from "sonner";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
@@ -173,6 +176,69 @@ const AdminReports: React.FC = () => {
     }
   };
 
+  const downloadReportCSV = () => {
+    if (!ordersData || ordersData.length === 0) {
+      toast.error("No data to download");
+      return;
+    }
+
+    const headers = ["Order ID", "Restaurant", "Amount", "Status", "Date"];
+    const rows = ordersData.map(order => [
+      order.id,
+      order.restaurant_name,
+      order.total_amount,
+      order.status,
+      format(new Date(order.created_at), "yyyy-MM-dd HH:mm:ss")
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `quickbite-report-${timeRange}-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Report downloaded successfully!");
+  };
+
+  const downloadDishReportCSV = () => {
+    if (!dishData || dishData.length === 0) {
+      toast.error("No dish data to download");
+      return;
+    }
+
+    const headers = ["Rank", "Dish Name", "Quantity Sold", "Revenue"];
+    const rows = dishData.map((dish, index) => [
+      index + 1,
+      dish.name,
+      dish.quantity,
+      dish.revenue
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `quickbite-dishes-${timeRange}-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Dish report downloaded successfully!");
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -188,23 +254,29 @@ const AdminReports: React.FC = () => {
           <h1 className="text-2xl font-bold text-foreground">Reports & Analytics</h1>
           <p className="text-muted-foreground">View order and dish performance</p>
         </div>
-        
-        <Tabs value={timeRange} onValueChange={(v) => setTimeRange(v as typeof timeRange)}>
-          <TabsList>
-            <TabsTrigger value="daily" className="gap-2">
-              <Calendar className="w-4 h-4" />
-              Daily
-            </TabsTrigger>
-            <TabsTrigger value="weekly" className="gap-2">
-              <Calendar className="w-4 h-4" />
-              Weekly
-            </TabsTrigger>
-            <TabsTrigger value="monthly" className="gap-2">
-              <Calendar className="w-4 h-4" />
-              Monthly
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+
+        <div className="flex items-center gap-3">
+          <Button onClick={downloadReportCSV} variant="outline" className="gap-2">
+            <Download className="w-4 h-4" />
+            Download Report
+          </Button>
+          <Tabs value={timeRange} onValueChange={(v) => setTimeRange(v as typeof timeRange)}>
+            <TabsList>
+              <TabsTrigger value="daily" className="gap-2">
+                <Calendar className="w-4 h-4" />
+                Daily
+              </TabsTrigger>
+              <TabsTrigger value="weekly" className="gap-2">
+                <Calendar className="w-4 h-4" />
+                Weekly
+              </TabsTrigger>
+              <TabsTrigger value="monthly" className="gap-2">
+                <Calendar className="w-4 h-4" />
+                Monthly
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -342,10 +414,16 @@ const AdminReports: React.FC = () => {
       {/* Top Dishes */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UtensilsCrossed className="w-5 h-5" />
-            Top Selling Dishes
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <UtensilsCrossed className="w-5 h-5" />
+              Top Selling Dishes
+            </CardTitle>
+            <Button onClick={downloadDishReportCSV} variant="outline" size="sm" className="gap-2">
+              <Download className="w-4 h-4" />
+              Download
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {dishData && dishData.length > 0 ? (

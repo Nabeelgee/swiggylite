@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Eye, UserPlus } from "lucide-react";
+import { Search, Eye, UserPlus, Download, FileText } from "lucide-react";
 import { useAllOrders, useUpdateOrderStatus } from "@/hooks/useAdmin";
 import { useAvailableDeliveryPartners, useAssignDeliveryPartner, useOrderTrackingInfo } from "@/hooks/useDeliveryPartners";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const ORDER_STATUSES = [
   { value: "placed", label: "Placed", color: "bg-yellow-100 text-yellow-700" },
@@ -138,6 +139,82 @@ const AssignPartnerDialog: React.FC<AssignPartnerDialogProps> = ({ orderId, onCl
   );
 };
 
+const generateOrderBillHTML = (order: any) => {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Order Bill - #${order.id.slice(0, 8)}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 15px; margin-bottom: 15px; }
+        .logo { font-size: 24px; font-weight: bold; color: #FF5200; }
+        .order-id { font-size: 14px; color: #666; margin-top: 5px; }
+        .section { margin: 15px 0; }
+        .section-title { font-weight: bold; margin-bottom: 8px; color: #333; }
+        .row { display: flex; justify-content: space-between; margin: 5px 0; }
+        .total { border-top: 2px solid #333; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 18px; }
+        .footer { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 2px dashed #ccc; color: #666; font-size: 12px; }
+        .status { display: inline-block; padding: 5px 10px; border-radius: 15px; background: #e8f5e9; color: #2e7d32; font-size: 12px; }
+        @media print { body { padding: 0; } }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="logo">QuickBite</div>
+        <div class="order-id">Order #${order.id.slice(0, 8)}</div>
+        <div class="status">${order.status.replace(/_/g, ' ').toUpperCase()}</div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Restaurant</div>
+        <div>${order.restaurant_name}</div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Delivery Address</div>
+        <div>${order.delivery_address}</div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Order Details</div>
+        <div class="row">
+          <span>Date:</span>
+          <span>${format(new Date(order.created_at), "MMM d, yyyy h:mm a")}</span>
+        </div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Payment Summary</div>
+        <div class="row">
+          <span>Subtotal:</span>
+          <span>₹${(Number(order.total_amount) - Number(order.delivery_fee || 0) - Number(order.platform_fee || 0)).toFixed(2)}</span>
+        </div>
+        <div class="row">
+          <span>Delivery Fee:</span>
+          <span>₹${Number(order.delivery_fee || 0).toFixed(2)}</span>
+        </div>
+        <div class="row">
+          <span>Platform Fee:</span>
+          <span>₹${Number(order.platform_fee || 0).toFixed(2)}</span>
+        </div>
+        <div class="row total">
+          <span>Total:</span>
+          <span>₹${Number(order.total_amount).toFixed(2)}</span>
+        </div>
+      </div>
+      
+      <div class="footer">
+        <p>Thank you for ordering with QuickBite!</p>
+        <p>For support: 9585077437</p>
+      </div>
+      
+      <script>window.onload = function() { window.print(); }</script>
+    </body>
+    </html>
+  `;
+};
+
 const AdminOrders: React.FC = () => {
   const { data: orders, isLoading } = useAllOrders();
   const updateOrderStatus = useUpdateOrderStatus();
@@ -145,6 +222,54 @@ const AdminOrders: React.FC = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [assignDialogOrder, setAssignDialogOrder] = useState<string | null>(null);
+
+  const downloadOrderBill = (order: any) => {
+    const billHTML = generateOrderBillHTML(order);
+    const blob = new Blob([billHTML], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const newWindow = window.open(url, "_blank");
+    if (newWindow) {
+      newWindow.onload = () => {
+        URL.revokeObjectURL(url);
+      };
+    }
+    toast.success("Bill opened for printing!");
+  };
+
+  const downloadAllOrdersCSV = () => {
+    if (!filteredOrders || filteredOrders.length === 0) {
+      toast.error("No orders to download");
+      return;
+    }
+
+    const headers = ["Order ID", "Restaurant", "Amount", "Delivery Fee", "Platform Fee", "Status", "Address", "Date"];
+    const rows = filteredOrders.map(order => [
+      order.id,
+      order.restaurant_name,
+      order.total_amount,
+      order.delivery_fee || 0,
+      order.platform_fee || 0,
+      order.status,
+      order.delivery_address,
+      format(new Date(order.created_at), "yyyy-MM-dd HH:mm:ss")
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `quickbite-orders-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Orders exported successfully!");
+  };
 
   const filteredOrders = orders?.filter((order) => {
     const matchesSearch = 
@@ -203,6 +328,10 @@ const AdminOrders: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
+        <Button onClick={downloadAllOrdersCSV} variant="outline" className="gap-2">
+          <Download className="w-4 h-4" />
+          Export CSV
+        </Button>
       </div>
 
       {isLoading ? (
@@ -301,6 +430,16 @@ const AdminOrders: React.FC = () => {
                             <Eye className="w-4 h-4" />
                           </Button>
                         </Link>
+
+                        {/* Download Bill Button */}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="Download Bill"
+                          onClick={() => downloadOrderBill(order)}
+                        >
+                          <FileText className="w-4 h-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
