@@ -241,7 +241,7 @@ const Cart: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium text-foreground">Google Pay</p>
-                      <p className="text-xs text-muted-foreground">Pay securely with GPay</p>
+                      <p className="text-xs text-muted-foreground">UPI: 9360646541@slc</p>
                     </div>
                   </Label>
                 </div>

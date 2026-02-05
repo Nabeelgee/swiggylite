@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
+import { ZoomIn, ZoomOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useOSRMRoute } from "@/hooks/useOSRMRoute";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -17,6 +19,7 @@ interface MockMapWithTilesProps {
   onLocationSelect?: (lat: number, lng: number) => void;
   zoom?: number;
   showRoute?: boolean;
+  onZoomChange?: (zoom: number) => void;
 }
 
 // Mercator projection helpers
@@ -36,6 +39,7 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
   onLocationSelect,
   zoom = 15,
   showRoute = true,
+  onZoomChange,
 }) => {
   const [animatedPartner, setAnimatedPartner] = useState(deliveryPartnerLocation);
   const previousPosRef = useRef(deliveryPartnerLocation);
@@ -43,6 +47,12 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 400, height: 300 });
   const velocityRef = useRef({ lat: 0, lng: 0 });
+  const [currentZoom, setCurrentZoom] = useState(zoom);
+
+  // Update zoom when prop changes
+  useEffect(() => {
+    setCurrentZoom(zoom);
+  }, [zoom]);
 
   // Fetch OSRM route from restaurant to delivery
   const { route: fullRoute } = useOSRMRoute(
@@ -132,9 +142,21 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
     return { lat: avgLat, lng: avgLng };
   }, [allPoints]);
 
+  const handleZoomIn = () => {
+    const newZoom = Math.min(currentZoom + 1, 18);
+    setCurrentZoom(newZoom);
+    onZoomChange?.(newZoom);
+  };
+
+  const handleZoomOut = () => {
+    const newZoom = Math.max(currentZoom - 1, 10);
+    setCurrentZoom(newZoom);
+    onZoomChange?.(newZoom);
+  };
+
   // Convert lat/lng to pixel coordinates
   const latLngToPixel = (lat: number, lng: number) => {
-    const scale = Math.pow(2, zoom) * 256;
+    const scale = Math.pow(2, currentZoom) * 256;
     const worldX = ((lng + 180) / 360) * scale;
     const worldY = ((1 - latToY(lat) / Math.PI) / 2) * scale;
     
@@ -150,7 +172,7 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
   // Generate OSM tile URLs
   const tiles = useMemo(() => {
     const tileSize = 256;
-    const scale = Math.pow(2, zoom);
+    const scale = Math.pow(2, currentZoom);
     
     const centerTileX = Math.floor(((center.lng + 180) / 360) * scale);
     const centerTileY = Math.floor(((1 - latToY(center.lat) / Math.PI) / 2) * scale);
@@ -175,7 +197,7 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
           tiles.push({
             x: tileX,
             y: tileY,
-            url: `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`,
+            url: `https://tile.openstreetmap.org/${currentZoom}/${tileX}/${tileY}.png`,
             pixelX: pixel.x,
             pixelY: pixel.y,
           });
@@ -184,7 +206,7 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
     }
     
     return tiles;
-  }, [center, zoom, containerSize]);
+  }, [center, currentZoom, containerSize]);
 
   const restaurantPixel = restaurantLocation ? latLngToPixel(restaurantLocation.lat, restaurantLocation.lng) : null;
   const deliveryPixel = deliveryLocation ? latLngToPixel(deliveryLocation.lat, deliveryLocation.lng) : null;
@@ -197,7 +219,7 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
     
-    const scale = Math.pow(2, zoom) * 256;
+    const scale = Math.pow(2, currentZoom) * 256;
     const centerWorldX = ((center.lng + 180) / 360) * scale;
     const centerWorldY = ((1 - latToY(center.lat) / Math.PI) / 2) * scale;
     
@@ -432,6 +454,26 @@ const MockMapWithTiles: React.FC<MockMapWithTilesProps> = ({
       {/* OSM Attribution */}
       <div className="absolute bottom-1 right-1 text-[8px] text-muted-foreground/60 z-30">
         © OpenStreetMap
+      </div>
+
+      {/* Zoom Controls */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-30">
+        <Button
+          variant="secondary"
+          size="icon"
+          className="w-10 h-10 rounded-full shadow-lg bg-card/95 hover:bg-card border border-border"
+          onClick={handleZoomIn}
+        >
+          <ZoomIn className="w-5 h-5" />
+        </Button>
+        <Button
+          variant="secondary"
+          size="icon"
+          className="w-10 h-10 rounded-full shadow-lg bg-card/95 hover:bg-card border border-border"
+          onClick={handleZoomOut}
+        >
+          <ZoomOut className="w-5 h-5" />
+        </Button>
       </div>
     </div>
   );
