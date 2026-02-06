@@ -90,6 +90,8 @@ const AdminDeliveryPartners: React.FC = () => {
         phone: data.phone,
         vehicle_type: data.vehicle_type,
         vehicle_number: data.vehicle_number,
+        employment_type: data.employment_type,
+        incentive_rate: data.incentive_rate,
         is_available: data.is_available,
       });
       if (error) throw error;
@@ -114,6 +116,8 @@ const AdminDeliveryPartners: React.FC = () => {
           phone: data.phone,
           vehicle_type: data.vehicle_type,
           vehicle_number: data.vehicle_number,
+          employment_type: data.employment_type,
+          incentive_rate: data.incentive_rate,
           is_available: data.is_available,
         })
         .eq("id", id);

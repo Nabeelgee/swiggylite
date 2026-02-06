@@ -12,69 +12,6 @@ import type { Database } from "@/integrations/supabase/types";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
 
-// Predefined route presets (Bangalore coordinates)
-const ROUTE_PRESETS = {
-  koramangala_to_hsr: {
-    name: "Koramangala → HSR Layout",
-    waypoints: [
-      { lat: 12.9352, lng: 77.6245 },
-      { lat: 12.9340, lng: 77.6260 },
-      { lat: 12.9320, lng: 77.6280 },
-      { lat: 12.9300, lng: 77.6300 },
-      { lat: 12.9280, lng: 77.6320 },
-      { lat: 12.9260, lng: 77.6340 },
-      { lat: 12.9240, lng: 77.6360 },
-      { lat: 12.9220, lng: 77.6380 },
-      { lat: 12.9200, lng: 77.6400 },
-      { lat: 12.9180, lng: 77.6420 },
-    ],
-  },
-  whitefield_to_indiranagar: {
-    name: "Whitefield → Indiranagar",
-    waypoints: [
-      { lat: 12.9698, lng: 77.7500 },
-      { lat: 12.9680, lng: 77.7400 },
-      { lat: 12.9660, lng: 77.7300 },
-      { lat: 12.9640, lng: 77.7200 },
-      { lat: 12.9620, lng: 77.7100 },
-      { lat: 12.9700, lng: 77.6900 },
-      { lat: 12.9750, lng: 77.6700 },
-      { lat: 12.9780, lng: 77.6500 },
-      { lat: 12.9810, lng: 77.6400 },
-      { lat: 12.9784, lng: 77.6408 },
-    ],
-  },
-  btm_to_jayanagar: {
-    name: "BTM Layout → Jayanagar",
-    waypoints: [
-      { lat: 12.9166, lng: 77.6101 },
-      { lat: 12.9180, lng: 77.6050 },
-      { lat: 12.9200, lng: 77.6000 },
-      { lat: 12.9220, lng: 77.5950 },
-      { lat: 12.9250, lng: 77.5920 },
-      { lat: 12.9280, lng: 77.5900 },
-      { lat: 12.9300, lng: 77.5880 },
-      { lat: 12.9320, lng: 77.5850 },
-      { lat: 12.9340, lng: 77.5830 },
-      { lat: 12.9250, lng: 77.5830 },
-    ],
-  },
-  custom_circle: {
-    name: "Circular Route (Demo)",
-    waypoints: [
-      { lat: 12.9352, lng: 77.6245 },
-      { lat: 12.9380, lng: 77.6280 },
-      { lat: 12.9400, lng: 77.6320 },
-      { lat: 12.9380, lng: 77.6360 },
-      { lat: 12.9352, lng: 77.6380 },
-      { lat: 12.9320, lng: 77.6360 },
-      { lat: 12.9300, lng: 77.6320 },
-      { lat: 12.9320, lng: 77.6280 },
-      { lat: 12.9352, lng: 77.6245 },
-    ],
-  },
-};
-
 interface OrderTracking {
   id: string;
   order_id: string;
@@ -84,7 +21,16 @@ interface OrderTracking {
     id: string;
     restaurant_name: string;
     delivery_address: string;
+    delivery_latitude: number | null;
+    delivery_longitude: number | null;
+    restaurant_id: string | null;
   };
+}
+
+interface Restaurant {
+  id: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 // Status progression for auto-status feature
@@ -98,12 +44,45 @@ const STATUS_PROGRESSION: OrderStatus[] = [
   "delivered"
 ];
 
+// Generate waypoints between two points with interpolation
+const generateRoute = (
+  startLat: number,
+  startLng: number,
+  endLat: number,
+  endLng: number,
+  numPoints: number = 15
+): { lat: number; lng: number }[] => {
+  const waypoints: { lat: number; lng: number }[] = [];
+  
+  for (let i = 0; i <= numPoints; i++) {
+    const t = i / numPoints;
+    // Add slight curve to make route look more realistic
+    const curve = Math.sin(t * Math.PI) * 0.001;
+    waypoints.push({
+      lat: startLat + (endLat - startLat) * t + curve,
+      lng: startLng + (endLng - startLng) * t + curve * 0.5,
+    });
+  }
+  
+  return waypoints;
+};
+
 // Mini map component showing delivery route
 const MiniRouteMap: React.FC<{
   route: { lat: number; lng: number }[];
   currentPosition: { lat: number; lng: number } | null;
   currentIndex: number;
-}> = ({ route, currentPosition, currentIndex }) => {
+  restaurantName?: string;
+  deliveryAddress?: string;
+}> = ({ route, currentPosition, currentIndex, restaurantName, deliveryAddress }) => {
+  if (route.length === 0) {
+    return (
+      <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-700 w-[280px] h-[200px] flex items-center justify-center">
+        <p className="text-muted-foreground text-sm">Select an order to see route</p>
+      </div>
+    );
+  }
+
   // Calculate bounds
   const lats = route.map(p => p.lat);
   const lngs = route.map(p => p.lng);
@@ -112,7 +91,7 @@ const MiniRouteMap: React.FC<{
   const minLng = Math.min(...lngs);
   const maxLng = Math.max(...lngs);
   
-  const padding = 20;
+  const padding = 25;
   const width = 280;
   const height = 200;
   
@@ -152,7 +131,7 @@ const MiniRouteMap: React.FC<{
             key={i}
             cx={toSvgX(point.lng)}
             cy={toSvgY(point.lat)}
-            r={i === 0 || i === route.length - 1 ? 6 : 3}
+            r={i === 0 || i === route.length - 1 ? 6 : 2}
             fill={i <= currentIndex ? "hsl(var(--primary))" : "hsl(var(--muted))"}
             stroke={i === 0 ? "#22c55e" : i === route.length - 1 ? "#ef4444" : "transparent"}
             strokeWidth="2"
@@ -190,11 +169,11 @@ const MiniRouteMap: React.FC<{
         )}
         
         {/* Start/End labels */}
-        <text x={toSvgX(route[0].lng)} y={toSvgY(route[0].lat) - 12} textAnchor="middle" fontSize="10" fill="#22c55e" fontWeight="bold">
-          START
+        <text x={toSvgX(route[0].lng)} y={toSvgY(route[0].lat) - 12} textAnchor="middle" fontSize="9" fill="#22c55e" fontWeight="bold">
+          🍽️ Restaurant
         </text>
-        <text x={toSvgX(route[route.length-1].lng)} y={toSvgY(route[route.length-1].lat) - 12} textAnchor="middle" fontSize="10" fill="#ef4444" fontWeight="bold">
-          END
+        <text x={toSvgX(route[route.length-1].lng)} y={toSvgY(route[route.length-1].lat) - 12} textAnchor="middle" fontSize="9" fill="#ef4444" fontWeight="bold">
+          🏠 Customer
         </text>
       </svg>
     </div>
@@ -203,17 +182,27 @@ const MiniRouteMap: React.FC<{
 
 const AdminDeliverySimulator: React.FC = () => {
   const [trackingRecords, setTrackingRecords] = useState<OrderTracking[]>([]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [selectedTrackingId, setSelectedTrackingId] = useState<string>("");
-  const [selectedRoute, setSelectedRoute] = useState<keyof typeof ROUTE_PRESETS>("koramangala_to_hsr");
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [currentWaypointIndex, setCurrentWaypointIndex] = useState(0);
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [autoProgressStatus, setAutoProgressStatus] = useState(true);
   const [updateCount, setUpdateCount] = useState(0);
+  const [dynamicRoute, setDynamicRoute] = useState<{ lat: number; lng: number }[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const { data: orders } = useAllOrders();
+
+  // Fetch restaurants for coordinates
+  useEffect(() => {
+    const fetchRestaurants = async () => {
+      const { data } = await supabase.from("restaurants").select("id, latitude, longitude");
+      if (data) setRestaurants(data);
+    };
+    fetchRestaurants();
+  }, []);
 
   // Fetch active order_tracking records
   useEffect(() => {
@@ -228,7 +217,10 @@ const AdminDeliverySimulator: React.FC = () => {
           orders (
             id,
             restaurant_name,
-            delivery_address
+            delivery_address,
+            delivery_latitude,
+            delivery_longitude,
+            restaurant_id
           )
         `)
         .in("status", ["confirmed", "preparing", "ready_for_pickup", "picked_up", "on_the_way", "arriving"])
@@ -258,6 +250,35 @@ const AdminDeliverySimulator: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [selectedTrackingId]);
+
+  // Generate route when order is selected
+  useEffect(() => {
+    if (!selectedTrackingId) {
+      setDynamicRoute([]);
+      return;
+    }
+
+    const tracking = trackingRecords.find(t => t.id === selectedTrackingId);
+    if (!tracking?.orders) {
+      setDynamicRoute([]);
+      return;
+    }
+
+    // Get restaurant coordinates
+    const restaurant = restaurants.find(r => r.id === tracking.orders.restaurant_id);
+    const restaurantLat = restaurant?.latitude || 12.9352;
+    const restaurantLng = restaurant?.longitude || 77.6245;
+
+    // Get customer delivery coordinates
+    const customerLat = tracking.orders.delivery_latitude || 12.938;
+    const customerLng = tracking.orders.delivery_longitude || 77.629;
+
+    // Generate route from restaurant to customer
+    const route = generateRoute(restaurantLat, restaurantLng, customerLat, customerLng, 20);
+    setDynamicRoute(route);
+    setCurrentWaypointIndex(0);
+    setCurrentPosition(null);
+  }, [selectedTrackingId, trackingRecords, restaurants]);
 
   // Update order_tracking location and optionally status
   const updateTrackingLocation = useCallback(async (lat: number, lng: number, progressPercent: number) => {
@@ -333,10 +354,9 @@ const AdminDeliverySimulator: React.FC = () => {
 
   // Simulation loop
   useEffect(() => {
-    if (!isRunning || !selectedTrackingId) return;
+    if (!isRunning || !selectedTrackingId || dynamicRoute.length === 0) return;
 
-    const route = ROUTE_PRESETS[selectedRoute];
-    const waypoints = route.waypoints;
+    const waypoints = dynamicRoute;
     const baseInterval = 2000;
     const interval = baseInterval / speed;
 
@@ -345,7 +365,22 @@ const AdminDeliverySimulator: React.FC = () => {
 
     intervalRef.current = setInterval(async () => {
       const currentWaypoint = waypoints[currentWaypointIndex];
-      const nextWaypointIndex = (currentWaypointIndex + 1) % waypoints.length;
+      const nextWaypointIndex = currentWaypointIndex + 1;
+      
+      // Check if we've reached the end
+      if (nextWaypointIndex >= waypoints.length) {
+        // Final position
+        setCurrentPosition(waypoints[waypoints.length - 1]);
+        await updateTrackingLocation(
+          waypoints[waypoints.length - 1].lat, 
+          waypoints[waypoints.length - 1].lng, 
+          1
+        );
+        toast.success("🎉 Delivery completed! Partner reached customer location.");
+        setIsRunning(false);
+        return;
+      }
+
       const nextWaypoint = waypoints[nextWaypointIndex];
 
       const t = subStep / subSteps;
@@ -363,11 +398,6 @@ const AdminDeliverySimulator: React.FC = () => {
       if (subStep >= subSteps) {
         subStep = 0;
         setCurrentWaypointIndex(nextWaypointIndex);
-        
-        if (nextWaypointIndex === 0) {
-          toast.success("Route completed! Delivery finished.");
-          setIsRunning(false);
-        }
       }
     }, interval / subSteps);
 
@@ -376,16 +406,20 @@ const AdminDeliverySimulator: React.FC = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, selectedTrackingId, selectedRoute, currentWaypointIndex, speed, updateTrackingLocation]);
+  }, [isRunning, selectedTrackingId, dynamicRoute, currentWaypointIndex, speed, updateTrackingLocation]);
 
   const handleStart = () => {
     if (!selectedTrackingId) {
       toast.error("Please select an order to simulate");
       return;
     }
+    if (dynamicRoute.length === 0) {
+      toast.error("No route available for this order");
+      return;
+    }
     setIsRunning(true);
     setUpdateCount(0);
-    toast.success("Live simulation started! Updates going to order_tracking in real-time.");
+    toast.success("🚀 Delivery simulation started! Partner heading to customer.");
   };
 
   const handlePause = () => {
@@ -408,7 +442,6 @@ const AdminDeliverySimulator: React.FC = () => {
   };
 
   const selectedTracking = trackingRecords.find(t => t.id === selectedTrackingId);
-  const currentRoute = ROUTE_PRESETS[selectedRoute];
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -418,7 +451,7 @@ const AdminDeliverySimulator: React.FC = () => {
           Live Delivery Simulator
         </h2>
         <p className="text-muted-foreground">
-          Real-time GPS simulation that updates customer's tracking map instantly
+          Simulate delivery from restaurant to customer location in real-time
         </p>
       </div>
 
@@ -432,61 +465,33 @@ const AdminDeliverySimulator: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
               {/* Order Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Package className="w-4 h-4" />
-                  Select Order to Track
-                </label>
-                <Select value={selectedTrackingId} onValueChange={setSelectedTrackingId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an active order" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {trackingRecords.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        No active orders with tracking
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                Select Order to Simulate
+              </label>
+              <Select value={selectedTrackingId} onValueChange={setSelectedTrackingId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an active order" />
+                </SelectTrigger>
+                <SelectContent>
+                  {trackingRecords.length === 0 ? (
+                    <SelectItem value="none" disabled>
+                      No active orders with tracking
+                    </SelectItem>
+                  ) : (
+                    trackingRecords.map((tracking) => (
+                      <SelectItem key={tracking.id} value={tracking.id}>
+                        {tracking.orders?.restaurant_name || "Unknown"} → {tracking.orders?.delivery_address?.slice(0, 30) || "Customer"} ({tracking.status})
                       </SelectItem>
-                    ) : (
-                      trackingRecords.map((tracking) => (
-                        <SelectItem key={tracking.id} value={tracking.id}>
-                          {tracking.orders?.restaurant_name || "Unknown"} - {tracking.status}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {trackingRecords.length} active order(s) with tracking
-                </p>
-              </div>
-
-              {/* Route Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Route Preset
-                </label>
-                <Select 
-                  value={selectedRoute} 
-                  onValueChange={(v) => setSelectedRoute(v as keyof typeof ROUTE_PRESETS)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(ROUTE_PRESETS).map(([key, route]) => (
-                      <SelectItem key={key} value={key}>
-                        {route.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {currentRoute.waypoints.length} waypoints in route
-                </p>
-              </div>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {trackingRecords.length} active order(s) with tracking • Route auto-generated from restaurant to customer
+              </p>
             </div>
 
             {/* Speed Control */}
@@ -529,9 +534,9 @@ const AdminDeliverySimulator: React.FC = () => {
             {/* Control Buttons */}
             <div className="flex gap-2">
               {!isRunning ? (
-                <Button onClick={handleStart} className="flex-1 gap-2" disabled={!selectedTrackingId}>
+                <Button onClick={handleStart} className="flex-1 gap-2" disabled={!selectedTrackingId || dynamicRoute.length === 0}>
                   <Play className="w-4 h-4" />
-                  Start Live Tracking
+                  Start Delivery
                 </Button>
               ) : (
                 <Button onClick={handlePause} variant="secondary" className="flex-1 gap-2">
@@ -567,12 +572,12 @@ const AdminDeliverySimulator: React.FC = () => {
                 {isRunning ? (
                   <>
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    Broadcasting
+                    Delivering
                   </>
                 ) : (
                   <>
                     <span className="w-2 h-2 bg-yellow-500 rounded-full" />
-                    Paused
+                    Ready
                   </>
                 )}
               </span>
@@ -585,27 +590,29 @@ const AdminDeliverySimulator: React.FC = () => {
             </div>
 
             {/* Route Progress */}
-            <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-              <span className="text-sm font-medium">Route Progress</span>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 bg-muted rounded-full h-2.5 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-primary to-primary/60 h-full rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${(currentWaypointIndex / (currentRoute.waypoints.length - 1)) * 100}%` 
-                    }}
-                  />
+            {dynamicRoute.length > 0 && (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                <span className="text-sm font-medium">Delivery Progress</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-muted rounded-full h-2.5 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-primary to-primary/60 h-full rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${(currentWaypointIndex / (dynamicRoute.length - 1)) * 100}%` 
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs font-medium min-w-[40px] text-right">
+                    {Math.round((currentWaypointIndex / (dynamicRoute.length - 1)) * 100)}%
+                  </span>
                 </div>
-                <span className="text-xs font-medium min-w-[40px] text-right">
-                  {currentWaypointIndex + 1}/{currentRoute.waypoints.length}
-                </span>
               </div>
-            </div>
+            )}
 
             {/* Current Position */}
             {currentPosition && (
               <div className="p-3 bg-primary/10 rounded-lg space-y-1">
-                <span className="text-xs font-medium text-primary">Broadcasting Position</span>
+                <span className="text-xs font-medium text-primary">🛵 Partner Location</span>
                 <div className="font-mono text-xs">
                   <p>📍 {currentPosition.lat.toFixed(6)}, {currentPosition.lng.toFixed(6)}</p>
                 </div>
@@ -617,11 +624,11 @@ const AdminDeliverySimulator: React.FC = () => {
               <div className="p-3 bg-muted/50 rounded-lg space-y-1 border-l-4 border-primary">
                 <span className="text-xs font-medium flex items-center gap-1">
                   <CheckCircle className="w-3 h-3 text-primary" />
-                  Selected Order
+                  Active Delivery
                 </span>
-                <p className="text-sm font-medium">{selectedTracking.orders?.restaurant_name}</p>
+                <p className="text-sm font-medium">🍽️ {selectedTracking.orders?.restaurant_name}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  → {selectedTracking.orders?.delivery_address}
+                  🏠 {selectedTracking.orders?.delivery_address}
                 </p>
               </div>
             )}
@@ -634,30 +641,32 @@ const AdminDeliverySimulator: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <MapPin className="w-5 h-5" />
-            Route Preview
+            Route Preview: Restaurant → Customer
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col md:flex-row gap-6">
           <MiniRouteMap 
-            route={currentRoute.waypoints} 
+            route={dynamicRoute} 
             currentPosition={currentPosition}
             currentIndex={currentWaypointIndex}
+            restaurantName={selectedTracking?.orders?.restaurant_name}
+            deliveryAddress={selectedTracking?.orders?.delivery_address}
           />
           
           <div className="flex-1 space-y-4">
             <div>
-              <h4 className="font-medium text-sm mb-2">How Live Tracking Works</h4>
+              <h4 className="font-medium text-sm mb-2">How It Works</h4>
               <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                <li>Select an order with an assigned delivery partner</li>
-                <li>Choose a route and click <strong>Start Live Tracking</strong></li>
-                <li>GPS coordinates broadcast to <code className="bg-muted px-1 rounded">order_tracking</code> table</li>
-                <li>Customer sees real-time movement on their tracking map</li>
+                <li>Select an order with assigned delivery partner</li>
+                <li>Route is auto-generated from restaurant to customer address</li>
+                <li>Click <strong>Start Delivery</strong> to begin simulation</li>
+                <li>Customer sees real-time movement on their tracking page</li>
               </ol>
             </div>
             
             <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm">
               <p className="text-green-700 dark:text-green-400 font-medium">
-                ✓ Real-time updates via Supabase Realtime
+                ✓ Real-time GPS updates via Supabase Realtime
               </p>
               <p className="text-green-600 dark:text-green-500 text-xs mt-1">
                 Open <code>/order/[orderId]</code> in another tab to see live movement!
