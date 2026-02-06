@@ -61,7 +61,30 @@ const Cart: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Create order
+      // Get restaurant coordinates for delivery calculation
+      let restaurantLat = 12.9352;
+      let restaurantLng = 77.6245;
+      
+      if (items[0]?.restaurantId) {
+        const { data: restaurant } = await supabase
+          .from("restaurants")
+          .select("latitude, longitude")
+          .eq("id", items[0].restaurantId)
+          .single();
+        
+        if (restaurant) {
+          restaurantLat = restaurant.latitude || restaurantLat;
+          restaurantLng = restaurant.longitude || restaurantLng;
+        }
+      }
+
+      // Generate a delivery location within 1km of restaurant
+      const angle = Math.random() * 2 * Math.PI;
+      const distance = Math.random() * 1; // 0-1km
+      const deliveryLat = restaurantLat + (distance * Math.cos(angle)) / 111;
+      const deliveryLng = restaurantLng + (distance * Math.sin(angle)) / (111 * Math.cos(restaurantLat * Math.PI / 180));
+
+      // Create order with delivery coordinates
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -69,6 +92,8 @@ const Cart: React.FC = () => {
           restaurant_id: items[0]?.restaurantId || null,
           restaurant_name: items[0]?.restaurantName || "Restaurant",
           delivery_address: address,
+          delivery_latitude: deliveryLat,
+          delivery_longitude: deliveryLng,
           total_amount: grandTotal,
           delivery_fee: deliveryFee,
           platform_fee: platformFee,
@@ -96,7 +121,7 @@ const Cart: React.FC = () => {
 
       if (itemsError) throw itemsError;
 
-      // Create order tracking
+      // Create initial order tracking (auto-delivery hook will update this)
       await supabase.from("order_tracking").insert({
         order_id: order.id,
         status: "placed",
