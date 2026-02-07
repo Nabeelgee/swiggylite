@@ -41,7 +41,7 @@
     --quickbite-violet: 300 75% 50%;
     --quickbite-lavender: 270 100% 96%;
     --quickbite-green: 158 64% 42%;
-    --quickbite-green-light: 0 0% 100%;
+    --quickbite-green-light: 158 64% 94%;
     --quickbite-text-dark: 270 15% 10%;
     --quickbite-text-light: 270 10% 45%;
     --quickbite-bg: 270 20% 98%;
@@ -52,7 +52,7 @@
     --zepto-purple: 280 85% 55%;
     --zepto-purple-light: 270 100% 96%;
     --zepto-green: 158 64% 42%;
-    --zepto-green-light: 0 0% 100%;
+    --zepto-green-light: 158 64% 94%;
     --zepto-card-shadow: 0 4px 24px -4px rgba(100, 50, 150, 0.1);
     --zepto-card-shadow-hover: 0 12px 40px -8px rgba(100, 50, 150, 0.2);
 

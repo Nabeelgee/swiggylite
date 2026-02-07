@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { useOrder } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { useAutoDelivery } from "@/hooks/useAutoDelivery";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 
@@ -16,9 +15,6 @@ const OrderConfirmationPage: React.FC = () => {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
-
-  // Auto-start delivery simulation
-  useAutoDelivery(orderId);
 
   // Check if order has GPay payment
   const isGPayOrder = order?.special_instructions?.includes("Google Pay");
