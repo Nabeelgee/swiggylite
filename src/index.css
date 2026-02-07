@@ -6,112 +6,56 @@
 
 @layer base {
   :root {
-    --background: 270 20% 98%;
-    --foreground: 270 15% 10%;
+    --background: 0 0% 100%;
+    --foreground: 220 15% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 270 15% 10%;
+    --card-foreground: 220 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 270 15% 10%;
+    --popover-foreground: 220 15% 15%;
 
-    --primary: 280 85% 55%;
+    --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 270 20% 95%;
-    --secondary-foreground: 270 15% 10%;
+    --secondary: 35 100% 96%;
+    --secondary-foreground: 220 15% 15%;
 
-    --muted: 270 15% 94%;
-    --muted-foreground: 270 10% 45%;
+    --muted: 220 10% 96%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 300 75% 50%;
+    --accent: 142 70% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 270 15% 88%;
-    --input: 270 15% 88%;
-    --ring: 280 85% 55%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 24 95% 53%;
 
     --radius: 1rem;
 
-    /* Custom QuickBite colors - Zepto purple theme */
-    --quickbite-purple: 280 85% 55%;
-    --quickbite-violet: 300 75% 50%;
-    --quickbite-lavender: 270 100% 96%;
-    --quickbite-green: 158 64% 42%;
-    --quickbite-green-light: 158 64% 94%;
-    --quickbite-text-dark: 270 15% 10%;
-    --quickbite-text-light: 270 10% 45%;
-    --quickbite-bg: 270 20% 98%;
-    --quickbite-card-shadow: 0 4px 24px -4px rgba(100, 50, 150, 0.1);
-    --quickbite-card-shadow-hover: 0 12px 40px -8px rgba(100, 50, 150, 0.2);
+    /* QuickBite brand colors - Fresh orange theme */
+    --quickbite-orange: 24 95% 53%;
+    --quickbite-orange-light: 35 100% 96%;
+    --quickbite-green: 142 70% 45%;
+    --quickbite-green-light: 142 70% 94%;
+    --quickbite-text-dark: 220 15% 15%;
+    --quickbite-text-light: 220 10% 45%;
+    --quickbite-bg: 0 0% 100%;
+    --quickbite-card-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.08);
+    --quickbite-card-shadow-hover: 0 12px 40px -8px rgba(0, 0, 0, 0.12);
 
-    /* Zepto-style colors */
-    --zepto-purple: 280 85% 55%;
-    --zepto-purple-light: 270 100% 96%;
-    --zepto-green: 158 64% 42%;
-    --zepto-green-light: 158 64% 94%;
-    --zepto-card-shadow: 0 4px 24px -4px rgba(100, 50, 150, 0.1);
-    --zepto-card-shadow-hover: 0 12px 40px -8px rgba(100, 50, 150, 0.2);
-
-    --sidebar-background: 270 20% 98%;
-    --sidebar-foreground: 270 15% 10%;
-    --sidebar-primary: 280 85% 55%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 15% 15%;
+    --sidebar-primary: 24 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 270 100% 96%;
-    --sidebar-accent-foreground: 270 15% 10%;
-    --sidebar-border: 270 15% 88%;
-    --sidebar-ring: 280 85% 55%;
+    --sidebar-accent: 35 100% 96%;
+    --sidebar-accent-foreground: 220 15% 15%;
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 24 95% 53%;
   }
-
-  .dark {
-    --background: 270 15% 8%;
-    --foreground: 270 15% 95%;
-
-    --card: 270 15% 12%;
-    --card-foreground: 270 15% 95%;
-
-    --popover: 270 15% 12%;
-    --popover-foreground: 270 15% 95%;
-
-    --primary: 280 85% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 270 15% 18%;
-    --secondary-foreground: 270 15% 95%;
-
-    --muted: 270 15% 18%;
-    --muted-foreground: 270 10% 60%;
-
-    --accent: 300 75% 55%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 62% 45%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 270 15% 22%;
-    --input: 270 15% 22%;
-    --ring: 280 85% 60%;
-
-    --sidebar-background: 270 15% 10%;
-    --sidebar-foreground: 270 15% 95%;
-    --sidebar-primary: 280 85% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 270 15% 18%;
-    --sidebar-accent-foreground: 270 15% 95%;
-    --sidebar-border: 270 15% 22%;
-    --sidebar-ring: 280 85% 60%;
-  }
-}
-
-/* Theme transition for smooth dark mode toggle */
-.theme-transition,
-.theme-transition *,
-.theme-transition *::before,
-.theme-transition *::after {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease, box-shadow 0.3s ease !important;
 }
 
 @layer base {
@@ -126,12 +70,12 @@
 }
 
 @layer utilities {
-  .zepto-shadow {
-    box-shadow: var(--zepto-card-shadow);
+  .quickbite-shadow {
+    box-shadow: var(--quickbite-card-shadow);
   }
 
-  .zepto-shadow-hover {
-    box-shadow: var(--zepto-card-shadow-hover);
+  .quickbite-shadow-hover {
+    box-shadow: var(--quickbite-card-shadow-hover);
   }
 
   .line-clamp-1 {

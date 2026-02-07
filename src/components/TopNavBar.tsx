@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, User, Clock, Heart, ShoppingBag, Settings, X, Moon, Sun, Shield } from "lucide-react";
+import { Home, Search, User, Clock, Heart, ShoppingBag, X, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { useTheme } from "@/hooks/useTheme";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,6 @@ const TopNavBar: React.FC = () => {
   const location = useLocation();
   const { user, profile, signOut } = useAuth();
   const { getTotalItems } = useCart();
-  const { theme, toggleTheme } = useTheme();
   const { data: isAdmin } = useIsAdmin();
   const [scrolled, setScrolled] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -91,23 +89,6 @@ const TopNavBar: React.FC = () => {
 
             {/* Right Actions - Desktop Only */}
             <div className="hidden md:flex items-center gap-2">
-              {/* Dark Mode Toggle */}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-full relative overflow-hidden"
-                onClick={toggleTheme}
-              >
-                <Sun className={cn(
-                  "w-5 h-5 absolute transition-all duration-300",
-                  theme === "dark" ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"
-                )} />
-                <Moon className={cn(
-                  "w-5 h-5 absolute transition-all duration-300",
-                  theme === "dark" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-0 opacity-0"
-                )} />
-              </Button>
-
               {/* Search Button */}
               <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setShowSearch(!showSearch)}>
                 {showSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
