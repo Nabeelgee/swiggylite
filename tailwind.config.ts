@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 export default {
+  darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
@@ -49,11 +50,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        quickbite: {
-          orange: "hsl(var(--quickbite-orange))",
-          "orange-light": "hsl(var(--quickbite-orange-light))",
-          green: "hsl(var(--quickbite-green))",
-          "green-light": "hsl(var(--quickbite-green-light))",
+        zepto: {
+          purple: "hsl(var(--zepto-purple))",
+          "purple-light": "hsl(var(--zepto-purple-light))",
+          green: "hsl(var(--zepto-green))",
+          "green-light": "hsl(var(--zepto-green-light))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
