@@ -97,7 +97,7 @@ export const useAutoDelivery = (orderId: string | undefined) => {
         // Check if order exists and is in valid status
         const { data: order, error: orderError } = await supabase
           .from("orders")
-          .select("*, restaurants(latitude, longitude)")
+          .select("*, restaurants(latitude, longitude, name)")
           .eq("id", orderId)
           .single();
 
@@ -108,21 +108,24 @@ export const useAutoDelivery = (orderId: string | undefined) => {
 
         // Only start for newly placed orders
         if (order.status !== "placed") {
+          console.log("Order not in placed status:", order.status);
           return;
         }
 
         isRunningRef.current = true;
+        console.log("🚀 Starting auto-delivery for order:", orderId);
 
-        // Get restaurant coordinates
-        const restaurant = order.restaurants as { latitude: number | null; longitude: number | null } | null;
+        // Get restaurant coordinates (default to Koramangala if not set)
+        const restaurant = order.restaurants as { latitude: number | null; longitude: number | null; name: string } | null;
         const restaurantLat = restaurant?.latitude || 12.9352;
         const restaurantLng = restaurant?.longitude || 77.6245;
 
-        // Get or generate customer delivery location
+        console.log("📍 Restaurant location:", { lat: restaurantLat, lng: restaurantLng });
+
+        // Get or generate customer delivery location (within 1km of restaurant)
         let customerLat = order.delivery_latitude;
         let customerLng = order.delivery_longitude;
 
-        // If no delivery coordinates, generate random location within 1km
         if (!customerLat || !customerLng) {
           const nearbyLocation = generateNearbyLocation(restaurantLat, restaurantLng, 1);
           customerLat = nearbyLocation.lat;
@@ -136,6 +139,10 @@ export const useAutoDelivery = (orderId: string | undefined) => {
               delivery_longitude: customerLng,
             })
             .eq("id", orderId);
+          
+          console.log("📍 Generated customer location:", { lat: customerLat, lng: customerLng });
+        } else {
+          console.log("📍 Using existing customer location:", { lat: customerLat, lng: customerLng });
         }
 
         // Get an available delivery partner
@@ -148,35 +155,21 @@ export const useAutoDelivery = (orderId: string | undefined) => {
         const partnerId = partners?.[0]?.id || null;
         const partnerName = partners?.[0]?.name || "Delivery Partner";
 
-        // Create or update order tracking
-        const { data: existingTracking } = await supabase
+        // Delete existing tracking and create fresh one starting at restaurant
+        await supabase
           .from("order_tracking")
-          .select("id")
-          .eq("order_id", orderId)
-          .single();
+          .delete()
+          .eq("order_id", orderId);
 
-        if (existingTracking) {
-          await supabase
-            .from("order_tracking")
-            .update({
-              delivery_partner_id: partnerId,
-              current_latitude: restaurantLat,
-              current_longitude: restaurantLng,
-              status: "confirmed",
-              status_message: "Restaurant confirmed your order",
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", existingTracking.id);
-        } else {
-          await supabase.from("order_tracking").insert({
-            order_id: orderId,
-            delivery_partner_id: partnerId,
-            current_latitude: restaurantLat,
-            current_longitude: restaurantLng,
-            status: "confirmed",
-            status_message: "Restaurant confirmed your order",
-          });
-        }
+        // Create new tracking record at RESTAURANT location
+        await supabase.from("order_tracking").insert({
+          order_id: orderId,
+          delivery_partner_id: partnerId,
+          current_latitude: restaurantLat,
+          current_longitude: restaurantLng,
+          status: "confirmed",
+          status_message: "Restaurant confirmed your order",
+        });
 
         // Update order status to confirmed
         await supabase
@@ -186,20 +179,7 @@ export const useAutoDelivery = (orderId: string | undefined) => {
 
         toast.success(`${partnerName} assigned to your order!`);
 
-        // Generate delivery path
-        const deliverySteps = generateDeliveryPath(
-          restaurantLat,
-          restaurantLng,
-          customerLat,
-          customerLng,
-          12
-        );
-
-        // Simulate delivery in ~1 minute (5 seconds per step)
-        const STEP_INTERVAL = 5000; // 5 seconds per step
-        let currentStep = 0;
-
-        // Initial preparing phase
+        // Phase 1: Preparing (2 seconds)
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         await supabase
@@ -207,6 +187,8 @@ export const useAutoDelivery = (orderId: string | undefined) => {
           .update({
             status: "preparing",
             status_message: "Chef is preparing your food",
+            current_latitude: restaurantLat,
+            current_longitude: restaurantLng,
             updated_at: new Date().toISOString(),
           })
           .eq("order_id", orderId);
@@ -216,14 +198,18 @@ export const useAutoDelivery = (orderId: string | undefined) => {
           .update({ status: "preparing", updated_at: new Date().toISOString() })
           .eq("id", orderId);
 
-        // Ready for pickup after 3 seconds
+        console.log("👨‍🍳 Status: Preparing");
+
+        // Phase 2: Ready for pickup (3 seconds)
         await new Promise(resolve => setTimeout(resolve, 3000));
 
         await supabase
           .from("order_tracking")
           .update({
             status: "ready_for_pickup",
-            status_message: "Order ready for pickup",
+            status_message: "Order ready! Partner picking up",
+            current_latitude: restaurantLat,
+            current_longitude: restaurantLng,
             updated_at: new Date().toISOString(),
           })
           .eq("order_id", orderId);
@@ -233,7 +219,23 @@ export const useAutoDelivery = (orderId: string | undefined) => {
           .update({ status: "ready_for_pickup", updated_at: new Date().toISOString() })
           .eq("id", orderId);
 
-        // Start delivery simulation
+        console.log("✅ Status: Ready for pickup");
+
+        // Generate delivery path FROM RESTAURANT TO CUSTOMER
+        const deliverySteps = generateDeliveryPath(
+          restaurantLat,
+          restaurantLng,
+          customerLat,
+          customerLng,
+          10 // 10 steps for ~50 second delivery (5s each)
+        );
+
+        console.log("🛣️ Delivery path generated:", deliverySteps.length, "steps");
+
+        // Phase 3: Delivery simulation - partner moves from restaurant to customer
+        let currentStep = 0;
+        const STEP_INTERVAL = 5000; // 5 seconds per step
+
         simulationRef.current = setInterval(async () => {
           if (currentStep >= deliverySteps.length) {
             if (simulationRef.current) {
@@ -241,10 +243,17 @@ export const useAutoDelivery = (orderId: string | undefined) => {
               simulationRef.current = null;
             }
             isRunningRef.current = false;
+            console.log("🏁 Delivery simulation complete!");
             return;
           }
 
           const step = deliverySteps[currentStep];
+
+          console.log(`📦 Step ${currentStep + 1}/${deliverySteps.length}:`, {
+            status: step.status,
+            lat: step.lat.toFixed(5),
+            lng: step.lng.toFixed(5),
+          });
 
           // Update tracking location and status
           await supabase
@@ -281,7 +290,7 @@ export const useAutoDelivery = (orderId: string | undefined) => {
       }
     };
 
-    // Small delay to ensure order is fully created
+    // Start after 1.5 seconds to ensure order is fully created
     const timeout = setTimeout(startAutoDelivery, 1500);
 
     return () => {
