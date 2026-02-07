@@ -37,6 +37,9 @@ const generateNearbyLocation = (
 /**
  * Generates delivery path from restaurant to customer
  */
+/**
+ * Generates STRAIGHT LINE delivery path from restaurant to customer
+ */
 const generateDeliveryPath = (
   startLat: number,
   startLng: number,
@@ -49,11 +52,9 @@ const generateDeliveryPath = (
   for (let i = 0; i <= numSteps; i++) {
     const progress = i / numSteps;
     
-    // Add slight curve for realistic path
-    const curve = Math.sin(progress * Math.PI) * 0.0005;
-    
-    const lat = startLat + (endLat - startLat) * progress + curve;
-    const lng = startLng + (endLng - startLng) * progress + curve * 0.5;
+    // STRAIGHT LINE - no curve, direct path from restaurant to home
+    const lat = startLat + (endLat - startLat) * progress;
+    const lng = startLng + (endLng - startLng) * progress;
     
     // Determine status based on progress
     let status: OrderStatus;

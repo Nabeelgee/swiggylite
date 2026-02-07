@@ -44,7 +44,7 @@ const STATUS_PROGRESSION: OrderStatus[] = [
   "delivered"
 ];
 
-// Generate waypoints between two points with interpolation
+// Generate STRAIGHT LINE waypoints from restaurant to customer home
 const generateRoute = (
   startLat: number,
   startLng: number,
@@ -56,11 +56,10 @@ const generateRoute = (
   
   for (let i = 0; i <= numPoints; i++) {
     const t = i / numPoints;
-    // Add slight curve to make route look more realistic
-    const curve = Math.sin(t * Math.PI) * 0.001;
+    // STRAIGHT LINE - direct path from restaurant to customer home
     waypoints.push({
-      lat: startLat + (endLat - startLat) * t + curve,
-      lng: startLng + (endLng - startLng) * t + curve * 0.5,
+      lat: startLat + (endLat - startLat) * t,
+      lng: startLng + (endLng - startLng) * t,
     });
   }
   
