@@ -36,7 +36,6 @@ const ORDER_STATUSES = [
   { value: "placed", label: "Placed", color: "bg-yellow-100 text-yellow-700" },
   { value: "confirmed", label: "Confirmed", color: "bg-blue-100 text-blue-700" },
   { value: "preparing", label: "Preparing", color: "bg-purple-100 text-purple-700" },
-  { value: "ready_for_pickup", label: "Ready", color: "bg-indigo-100 text-indigo-700" },
   { value: "picked_up", label: "Picked Up", color: "bg-cyan-100 text-cyan-700" },
   { value: "on_the_way", label: "On the Way", color: "bg-orange-100 text-orange-700" },
   { value: "arriving", label: "Arriving", color: "bg-amber-100 text-amber-700" },
