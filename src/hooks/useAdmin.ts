@@ -290,3 +290,51 @@ export const useUpdateOrderStatus = () => {
     },
   });
 };
+
+export const useDeleteOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      // First delete related order_items
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .delete()
+        .eq("order_id", orderId);
+
+      if (itemsError) throw itemsError;
+
+      // Delete related order_tracking
+      const { error: trackingError } = await supabase
+        .from("order_tracking")
+        .delete()
+        .eq("order_id", orderId);
+
+      if (trackingError) throw trackingError;
+
+      // Delete related order_messages
+      const { error: messagesError } = await supabase
+        .from("order_messages")
+        .delete()
+        .eq("order_id", orderId);
+
+      if (messagesError) throw messagesError;
+
+      // Finally delete the order
+      const { error } = await supabase
+        .from("orders")
+        .delete()
+        .eq("id", orderId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast.success("Order deleted successfully!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+};

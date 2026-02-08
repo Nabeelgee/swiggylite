@@ -34,7 +34,7 @@ const statusSteps: StatusStep[] = [
   { status: "picked_up", label: "Picked Up", description: "Driver has your order", icon: Bike },
   { status: "on_the_way", label: "On the Way", description: "Headed to your location", icon: Navigation },
   { status: "arriving", label: "Arriving", description: "Almost at your doorstep", icon: MapPin },
-  { status: "delivered", label: "Delivered", description: "Enjoy your meal!", icon: CheckCircle2 },
+  { status: "delivered", label: "Delivered", description: "Order completed successfully", icon: CheckCircle2 },
 ];
 
 const getStatusIndex = (status: OrderStatus): number => {

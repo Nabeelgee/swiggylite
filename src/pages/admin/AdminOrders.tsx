@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Search, Eye, UserPlus, Download, FileText, Image } from "lucide-react";
-import { useAllOrders, useUpdateOrderStatus } from "@/hooks/useAdmin";
+import { Search, Eye, UserPlus, Download, FileText, Image, Trash2 } from "lucide-react";
+import { useAllOrders, useUpdateOrderStatus, useDeleteOrder } from "@/hooks/useAdmin";
 import { useAvailableDeliveryPartners, useAssignDeliveryPartner, useOrderTrackingInfo } from "@/hooks/useDeliveryPartners";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -217,10 +217,12 @@ const generateOrderBillHTML = (order: any) => {
 const AdminOrders: React.FC = () => {
   const { data: orders, isLoading } = useAllOrders();
   const updateOrderStatus = useUpdateOrderStatus();
+  const deleteOrder = useDeleteOrder();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [assignDialogOrder, setAssignDialogOrder] = useState<string | null>(null);
+  const [deleteDialogOrder, setDeleteDialogOrder] = useState<string | null>(null);
 
   const downloadOrderBill = (order: any) => {
     const billHTML = generateOrderBillHTML(order);
@@ -440,6 +442,46 @@ const AdminOrders: React.FC = () => {
                         >
                           <FileText className="w-4 h-4" />
                         </Button>
+
+                        {/* Delete Order Button */}
+                        <Dialog
+                          open={deleteDialogOrder === order.id}
+                          onOpenChange={(open) => setDeleteDialogOrder(open ? order.id : null)}
+                        >
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              title="Delete Order"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Delete Order</DialogTitle>
+                              <DialogDescription>
+                                Are you sure you want to delete order #{order.id.slice(0, 8)}? This action cannot be undone.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex justify-end gap-2 pt-4">
+                              <Button variant="outline" onClick={() => setDeleteDialogOrder(null)}>
+                                Cancel
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                onClick={async () => {
+                                  await deleteOrder.mutateAsync(order.id);
+                                  setDeleteDialogOrder(null);
+                                }}
+                                disabled={deleteOrder.isPending}
+                              >
+                                {deleteOrder.isPending ? "Deleting..." : "Delete Order"}
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     </TableCell>
                     <TableCell>
