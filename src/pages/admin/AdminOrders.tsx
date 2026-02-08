@@ -4,6 +4,7 @@ import { useAllOrders, useUpdateOrderStatus, useDeleteOrder } from "@/hooks/useA
 import { useAvailableDeliveryPartners, useAssignDeliveryPartner, useOrderTrackingInfo } from "@/hooks/useDeliveryPartners";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "react-router-dom";
 import {
   Select,
@@ -223,6 +224,9 @@ const AdminOrders: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [assignDialogOrder, setAssignDialogOrder] = useState<string | null>(null);
   const [deleteDialogOrder, setDeleteDialogOrder] = useState<string | null>(null);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const downloadOrderBill = (order: any) => {
     const billHTML = generateOrderBillHTML(order);
@@ -280,6 +284,43 @@ const AdminOrders: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrders((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!filteredOrders) return;
+    if (selectedOrders.size === filteredOrders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(filteredOrders.map((o) => o.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      for (const orderId of selectedOrders) {
+        await deleteOrder.mutateAsync(orderId);
+      }
+      setSelectedOrders(new Set());
+      setShowBulkDeleteDialog(false);
+      toast.success(`${selectedOrders.size} orders deleted successfully!`);
+    } catch (error) {
+      toast.error("Failed to delete some orders");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   const handleStatusChange = async (orderId: string, status: string) => {
     await updateOrderStatus.mutateAsync({ 
       orderId, 
@@ -333,6 +374,38 @@ const AdminOrders: React.FC = () => {
           <Download className="w-4 h-4" />
           Export CSV
         </Button>
+        
+        {/* Bulk Delete Button */}
+        {selectedOrders.size > 0 && (
+          <Dialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+            <DialogTrigger asChild>
+              <Button variant="destructive" className="gap-2">
+                <Trash2 className="w-4 h-4" />
+                Delete ({selectedOrders.size})
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Selected Orders</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete {selectedOrders.size} order{selectedOrders.size > 1 ? 's' : ''}? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setShowBulkDeleteDialog(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                >
+                  {bulkDeleting ? "Deleting..." : `Delete ${selectedOrders.size} Order${selectedOrders.size > 1 ? 's' : ''}`}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {isLoading ? (
@@ -346,6 +419,12 @@ const AdminOrders: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={filteredOrders && filteredOrders.length > 0 && selectedOrders.size === filteredOrders.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Order ID</TableHead>
                 <TableHead className="hidden md:table-cell">Restaurant</TableHead>
                 <TableHead>Amount</TableHead>
@@ -358,13 +437,19 @@ const AdminOrders: React.FC = () => {
             <TableBody>
               {filteredOrders?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No orders found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredOrders?.map((order) => (
-                  <TableRow key={order.id}>
+                  <TableRow key={order.id} className={selectedOrders.has(order.id) ? "bg-muted/50" : ""}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedOrders.has(order.id)}
+                        onCheckedChange={() => toggleOrderSelection(order.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <p className="font-mono text-sm">#{order.id.slice(0, 8)}</p>
                     </TableCell>
