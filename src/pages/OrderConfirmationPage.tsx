@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle, Package, Clock, MapPin, ArrowRight, Upload, Camera, ImageIcon, Loader2 } from "lucide-react";
+import { CheckCircle, Package, Clock, MapPin, ArrowRight, Upload, Camera, ImageIcon, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOrder } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,14 +8,28 @@ import { useAuth } from "@/context/AuthContext";
 import { useAutoDelivery } from "@/hooks/useAutoDelivery";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const OrderConfirmationPage: React.FC = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const { data: order, isLoading } = useOrder(orderId || "");
+  const { data: order, isLoading, refetch } = useOrder(orderId || "");
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [canCancel, setCanCancel] = useState(true);
+  const [cancelCountdown, setCancelCountdown] = useState(15);
+  const [cancelling, setCancelling] = useState(false);
 
   // Auto-start delivery simulation
   useAutoDelivery(orderId);
@@ -29,6 +43,89 @@ const OrderConfirmationPage: React.FC = () => {
       setScreenshotUrl((order as any).payment_screenshot_url);
     }
   }, [order]);
+
+  // Cancel countdown timer - allow cancel for 15 seconds
+  useEffect(() => {
+    if (!orderId) return;
+    
+    const timer = setInterval(() => {
+      setCancelCountdown((prev) => {
+        if (prev <= 1) {
+          setCanCancel(false);
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [orderId]);
+
+  // Subscribe to order status changes and redirect to home when delivered
+  useEffect(() => {
+    if (!orderId) return;
+
+    const channel = supabase
+      .channel(`order-status-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new?.status;
+          if (newStatus === 'delivered') {
+            toast.success("🎉 Order delivered! Redirecting to home...");
+            setTimeout(() => {
+              navigate('/');
+            }, 2000);
+          }
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, navigate, refetch]);
+
+  // Handle order cancellation
+  const handleCancelOrder = useCallback(async () => {
+    if (!orderId || !canCancel) return;
+    
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      // Also update tracking
+      await supabase
+        .from('order_tracking')
+        .update({ 
+          status: 'cancelled', 
+          status_message: 'Order cancelled by customer',
+          updated_at: new Date().toISOString() 
+        })
+        .eq('order_id', orderId);
+
+      toast.success("Order cancelled successfully");
+      navigate('/');
+    } catch (error: any) {
+      console.error("Cancel error:", error);
+      toast.error("Failed to cancel order");
+    } finally {
+      setCancelling(false);
+    }
+  }, [orderId, canCancel, navigate]);
 
   const handleScreenshotUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -223,6 +320,50 @@ const OrderConfirmationPage: React.FC = () => {
                   </div>
                 </label>
               )}
+            </div>
+          )}
+
+          {/* Cancel Order Section - only available for 15 seconds */}
+          {canCancel && order?.status === 'placed' && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <XCircle className="w-5 h-5 text-destructive" />
+                  <div className="text-left">
+                    <p className="font-medium text-foreground text-sm">Changed your mind?</p>
+                    <p className="text-xs text-muted-foreground">Cancel within {cancelCountdown}s</p>
+                  </div>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      disabled={cancelling}
+                    >
+                      {cancelling ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Cancel Order"
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel Order?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to cancel this order? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep Order</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleCancelOrder} className="bg-destructive hover:bg-destructive/90">
+                        Yes, Cancel
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           )}
 
