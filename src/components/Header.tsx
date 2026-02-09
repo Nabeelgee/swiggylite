@@ -3,6 +3,7 @@ import { Search, MapPin, ChevronDown, ShoppingBag, User, Menu, X, Heart } from "
 import { Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { useDeliveryLocation } from "@/context/LocationContext";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -19,12 +20,26 @@ import {
 import Cart from "./Cart";
 import GlobalSearch from "./GlobalSearch";
 
+// Vellore district areas with coordinates
+const VELLORE_AREAS = [
+  { name: "Vellore", lat: 12.9165, lng: 79.1325 },
+  { name: "Katpadi", lat: 12.9693, lng: 79.1453 },
+  { name: "Ambur", lat: 12.7868, lng: 78.7199 },
+  { name: "Melvisharam", lat: 12.9350, lng: 79.3000 },
+  { name: "Vaniyambadi", lat: 12.6819, lng: 78.6212 },
+  { name: "Gudiyatham", lat: 12.9441, lng: 78.8717 },
+  { name: "Ranipet", lat: 12.9345, lng: 79.3339 },
+  { name: "Arcot", lat: 12.9035, lng: 79.3175 },
+];
+
 const Header: React.FC = () => {
   const { getTotalItems } = useCart();
   const { user, profile, signOut } = useAuth();
-  const [location] = useState("Koramangala, Bangalore");
+  const { selectedLocation, setSelectedLocation } = useDeliveryLocation();
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const totalItems = getTotalItems();
+  
+  const currentLocation = selectedLocation || "Select Location";
 
   return (
     <header className="sticky top-0 z-50 bg-card shadow-sm">
@@ -39,11 +54,30 @@ const Header: React.FC = () => {
             </div>
           </Link>
 
-          <button className="hidden md:flex items-center gap-2 text-sm hover:text-primary transition-colors">
-            <MapPin className="w-4 h-4 text-primary" />
-            <span className="font-medium text-foreground line-clamp-1 max-w-[200px]">{location}</span>
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="hidden md:flex items-center gap-2 text-sm hover:text-primary transition-colors">
+                <MapPin className="w-4 h-4 text-primary" />
+                <span className="font-medium text-foreground line-clamp-1 max-w-[200px]">{currentLocation}</span>
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                Vellore District Areas
+              </div>
+              {VELLORE_AREAS.map((area) => (
+                <DropdownMenuItem 
+                  key={area.name}
+                  onClick={() => setSelectedLocation(area.name)}
+                  className={`cursor-pointer ${selectedLocation === area.name ? 'bg-primary/10 text-primary' : ''}`}
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  {area.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <div className="flex-1 max-w-md hidden lg:block">
             <GlobalSearch />

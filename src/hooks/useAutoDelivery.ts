@@ -114,10 +114,10 @@ export const useAutoDelivery = (orderId: string | undefined) => {
 
         isRunningRef.current = true;
 
-        // Get restaurant coordinates
+        // Get restaurant coordinates (default to Vellore)
         const restaurant = order.restaurants as { latitude: number | null; longitude: number | null } | null;
-        const restaurantLat = restaurant?.latitude || 12.9352;
-        const restaurantLng = restaurant?.longitude || 77.6245;
+        const restaurantLat = restaurant?.latitude || 12.9165;
+        const restaurantLng = restaurant?.longitude || 79.1325;
 
         // Get or generate customer delivery location
         let customerLat = order.delivery_latitude;
@@ -196,8 +196,8 @@ export const useAutoDelivery = (orderId: string | undefined) => {
           12
         );
 
-        // Simulate delivery in ~1 minute (5 seconds per step)
-        const STEP_INTERVAL = 5000; // 5 seconds per step
+        // Simulate delivery in ~2 minutes (10 seconds per step)
+        const STEP_INTERVAL = 10000; // 10 seconds per step
         let currentStep = 0;
 
         // Initial preparing phase
