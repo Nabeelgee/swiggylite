@@ -35,6 +35,9 @@ const generateNearbyLocation = (
 };
 
 /**
+ * Generates delivery path from restaurant to customer
+ */
+/**
  * Generates STRAIGHT LINE delivery path from restaurant to customer
  */
 const generateDeliveryPath = (
@@ -68,7 +71,7 @@ const generateDeliveryPath = (
       message = "Almost there! Arriving soon";
     } else {
       status = "delivered";
-      message = "Order delivered successfully";
+      message = "Order delivered! Enjoy your meal";
     }
     
     steps.push({ lat, lng, status, message });
@@ -78,22 +81,21 @@ const generateDeliveryPath = (
 };
 
 /**
- * Hook that automatically handles delivery simulation AFTER admin confirms the order
- * - Listens for order status change to "confirmed"
- * - After 15 seconds delay, starts the map and delivery simulation
- * - Completes delivery within ~2 minutes
+ * Hook that automatically handles delivery simulation when an order is placed
+ * - Auto-assigns a delivery partner
+ * - Generates delivery location within 1km if not set
+ * - Completes delivery within 1 minute
  */
 export const useAutoDelivery = (orderId: string | undefined) => {
   const simulationRef = useRef<NodeJS.Timeout | null>(null);
   const isRunningRef = useRef(false);
-  const hasStartedRef = useRef(false);
 
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId || isRunningRef.current) return;
 
-    const startDeliverySimulation = async () => {
+    const startAutoDelivery = async () => {
       try {
-        // Check if order exists
+        // Check if order exists and is in valid status
         const { data: order, error: orderError } = await supabase
           .from("orders")
           .select("*, restaurants(latitude, longitude)")
@@ -102,6 +104,11 @@ export const useAutoDelivery = (orderId: string | undefined) => {
 
         if (orderError || !order) {
           console.log("Order not found:", orderId);
+          return;
+        }
+
+        // Only start for newly placed orders
+        if (order.status !== "placed") {
           return;
         }
 
@@ -142,7 +149,7 @@ export const useAutoDelivery = (orderId: string | undefined) => {
         const partnerId = partners?.[0]?.id || null;
         const partnerName = partners?.[0]?.name || "Delivery Partner";
 
-        // Create or update order tracking with partner and initial location
+        // Create or update order tracking
         const { data: existingTracking } = await supabase
           .from("order_tracking")
           .select("id")
@@ -156,8 +163,8 @@ export const useAutoDelivery = (orderId: string | undefined) => {
               delivery_partner_id: partnerId,
               current_latitude: restaurantLat,
               current_longitude: restaurantLng,
-              status: "preparing",
-              status_message: "Chef is preparing your food",
+              status: "confirmed",
+              status_message: "Restaurant confirmed your order",
               updated_at: new Date().toISOString(),
             })
             .eq("id", existingTracking.id);
@@ -167,18 +174,18 @@ export const useAutoDelivery = (orderId: string | undefined) => {
             delivery_partner_id: partnerId,
             current_latitude: restaurantLat,
             current_longitude: restaurantLng,
-            status: "preparing",
-            status_message: "Chef is preparing your food",
+            status: "confirmed",
+            status_message: "Restaurant confirmed your order",
           });
         }
 
-        toast.success(`${partnerName} assigned to your order!`);
-
-        // Update to preparing status
+        // Update order status to confirmed
         await supabase
           .from("orders")
-          .update({ status: "preparing", updated_at: new Date().toISOString() })
+          .update({ status: "confirmed", updated_at: new Date().toISOString() })
           .eq("id", orderId);
+
+        toast.success(`${partnerName} assigned to your order!`);
 
         // Generate delivery path
         const deliverySteps = generateDeliveryPath(
@@ -189,12 +196,43 @@ export const useAutoDelivery = (orderId: string | undefined) => {
           12
         );
 
-        // Wait 5 seconds before starting map movement
-        await new Promise(resolve => setTimeout(resolve, 5000));
-
         // Simulate delivery in ~2 minutes (10 seconds per step)
-        const STEP_INTERVAL = 10000;
+        const STEP_INTERVAL = 10000; // 10 seconds per step
         let currentStep = 0;
+
+        // Initial preparing phase
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        await supabase
+          .from("order_tracking")
+          .update({
+            status: "preparing",
+            status_message: "Chef is preparing your food",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("order_id", orderId);
+
+        await supabase
+          .from("orders")
+          .update({ status: "preparing", updated_at: new Date().toISOString() })
+          .eq("id", orderId);
+
+        // Ready for pickup after 3 seconds
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        await supabase
+          .from("order_tracking")
+          .update({
+            status: "ready_for_pickup",
+            status_message: "Order ready for pickup",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("order_id", orderId);
+
+        await supabase
+          .from("orders")
+          .update({ status: "ready_for_pickup", updated_at: new Date().toISOString() })
+          .eq("id", orderId);
 
         // Start delivery simulation
         simulationRef.current = setInterval(async () => {
@@ -244,36 +282,11 @@ export const useAutoDelivery = (orderId: string | undefined) => {
       }
     };
 
-    // Subscribe to order status changes - start simulation when admin confirms
-    const channel = supabase
-      .channel(`auto-delivery-${orderId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `id=eq.${orderId}`,
-        },
-        async (payload) => {
-          const newStatus = payload.new?.status;
-          
-          // Start delivery simulation 15 seconds after admin confirms
-          if (newStatus === 'confirmed' && !isRunningRef.current && !hasStartedRef.current) {
-            hasStartedRef.current = true;
-            toast.info("Order confirmed! Map will start in 15 seconds...");
-            
-            // Wait 15 seconds before starting map
-            setTimeout(() => {
-              startDeliverySimulation();
-            }, 15000);
-          }
-        }
-      )
-      .subscribe();
+    // Small delay to ensure order is fully created
+    const timeout = setTimeout(startAutoDelivery, 1500);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearTimeout(timeout);
       if (simulationRef.current) {
         clearInterval(simulationRef.current);
         simulationRef.current = null;
