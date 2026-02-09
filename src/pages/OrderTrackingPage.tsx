@@ -17,79 +17,118 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Database } from "@/integrations/supabase/types";
-
 type OrderStatus = Database["public"]["Enums"]["order_status"];
-
 interface StatusStep {
   status: OrderStatus;
   label: string;
   description: string;
   icon: React.ElementType;
 }
-
-const statusSteps: StatusStep[] = [
-  { status: "placed", label: "Order Placed", description: "We've received your order", icon: Package },
-  { status: "confirmed", label: "Confirmed", description: "Restaurant is preparing", icon: ChefHat },
-  { status: "preparing", label: "Preparing", description: "Your food is being cooked", icon: ChefHat },
-  { status: "picked_up", label: "Picked Up", description: "Driver has your order", icon: Bike },
-  { status: "on_the_way", label: "On the Way", description: "Headed to your location", icon: Navigation },
-  { status: "arriving", label: "Arriving", description: "Almost at your doorstep", icon: MapPin },
-  { status: "delivered", label: "Delivered", description: "Order completed successfully", icon: CheckCircle2 },
-];
-
+const statusSteps: StatusStep[] = [{
+  status: "placed",
+  label: "Order Placed",
+  description: "We've received your order",
+  icon: Package
+}, {
+  status: "confirmed",
+  label: "Confirmed",
+  description: "Restaurant is preparing",
+  icon: ChefHat
+}, {
+  status: "preparing",
+  label: "Preparing",
+  description: "Your food is being cooked",
+  icon: ChefHat
+}, {
+  status: "picked_up",
+  label: "Picked Up",
+  description: "Driver has your order",
+  icon: Bike
+}, {
+  status: "on_the_way",
+  label: "On the Way",
+  description: "Headed to your location",
+  icon: Navigation
+}, {
+  status: "arriving",
+  label: "Arriving",
+  description: "Almost at your doorstep",
+  icon: MapPin
+}, {
+  status: "delivered",
+  label: "Delivered",
+  description: "Order completed successfully",
+  icon: CheckCircle2
+}];
 const getStatusIndex = (status: OrderStatus): number => {
-  const index = statusSteps.findIndex((s) => s.status === status);
+  const index = statusSteps.findIndex(s => s.status === status);
   return index >= 0 ? index : 0;
 };
-
 const getProgressPercentage = (status: OrderStatus): number => {
   const index = getStatusIndex(status);
-  return ((index + 1) / statusSteps.length) * 100;
+  return (index + 1) / statusSteps.length * 100;
 };
-
 const OrderTrackingPage: React.FC = () => {
-  const { orderId } = useParams<{ orderId: string }>();
+  const {
+    orderId
+  } = useParams<{
+    orderId: string;
+  }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { user, loading: authLoading } = useAuth();
-  const { data: order, isLoading: orderLoading } = useOrder(orderId || "");
-  const { data: orderItems } = useOrderItems(orderId || "");
-  
-  const { tracking, partner, partnerLocation, isConnected, lastUpdate } = useLiveOrderTracking(orderId || "");
-  const { data: isAdmin } = useIsAdmin();
-
-  const [simulatedPartnerLocation, setSimulatedPartnerLocation] = useState<{ lat: number; lng: number } | null>(null);
-
+  const {
+    user,
+    loading: authLoading
+  } = useAuth();
+  const {
+    data: order,
+    isLoading: orderLoading
+  } = useOrder(orderId || "");
+  const {
+    data: orderItems
+  } = useOrderItems(orderId || "");
+  const {
+    tracking,
+    partner,
+    partnerLocation,
+    isConnected,
+    lastUpdate
+  } = useLiveOrderTracking(orderId || "");
+  const {
+    data: isAdmin
+  } = useIsAdmin();
+  const [simulatedPartnerLocation, setSimulatedPartnerLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const deliveryLocation = order ? {
     lat: order.delivery_latitude || 12.9380,
-    lng: order.delivery_longitude || 77.6290,
+    lng: order.delivery_longitude || 77.6290
   } : null;
-
   const effectivePartnerLocation = partnerLocation || simulatedPartnerLocation;
-  const { eta, isLoading: etaLoading } = useRouteETA(effectivePartnerLocation, deliveryLocation);
-
+  const {
+    eta,
+    isLoading: etaLoading
+  } = useRouteETA(effectivePartnerLocation, deliveryLocation);
   const isDeliveryInProgress = !!(order && (order.status === "picked_up" || order.status === "on_the_way" || order.status === "arriving"));
   useETANotifications({
     orderId: orderId || "",
     partnerLocation: effectivePartnerLocation,
     deliveryLocation,
     partnerName: partner?.name,
-    isEnabled: isDeliveryInProgress,
+    isEnabled: isDeliveryInProgress
   });
-
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
-
   useEffect(() => {
     if (order && !partnerLocation && (order.status === "picked_up" || order.status === "on_the_way")) {
       const restaurantLat = 12.9352;
       const restaurantLng = 77.6245;
       const deliveryLat = order.delivery_latitude || 12.9380;
       const deliveryLng = order.delivery_longitude || 77.6290;
-
       let progress = 0;
       const interval = setInterval(() => {
         progress += 0.05;
@@ -99,27 +138,24 @@ const OrderTrackingPage: React.FC = () => {
         }
         const currentLat = restaurantLat + (deliveryLat - restaurantLat) * progress;
         const currentLng = restaurantLng + (deliveryLng - restaurantLng) * progress;
-        setSimulatedPartnerLocation({ lat: currentLat, lng: currentLng });
+        setSimulatedPartnerLocation({
+          lat: currentLat,
+          lng: currentLng
+        });
       }, 2000);
-
       return () => clearInterval(interval);
     }
   }, [order, partnerLocation]);
-
   if (authLoading || orderLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground">Loading order details...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   if (!order) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    return <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4">
           <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto">
             <Package className="w-10 h-10 text-muted-foreground" />
@@ -130,10 +166,8 @@ const OrderTrackingPage: React.FC = () => {
             <Button>View all orders</Button>
           </Link>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   const currentStatusIndex = getStatusIndex(order.status);
   const isDelivered = order.status === "delivered";
   const isCancelled = order.status === "cancelled";
@@ -141,8 +175,7 @@ const OrderTrackingPage: React.FC = () => {
 
   // Mobile Layout
   if (isMobile) {
-    return (
-      <div className="min-h-screen bg-background pb-24">
+    return <div className="min-h-screen bg-background pb-24">
         {/* Mobile Header */}
         <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border">
           <div className="flex items-center justify-between p-4">
@@ -153,36 +186,22 @@ const OrderTrackingPage: React.FC = () => {
               <h1 className="font-semibold text-foreground">Track Order</h1>
               <p className="text-xs text-muted-foreground">#{order.id.slice(0, 8).toUpperCase()}</p>
             </div>
-            {!isDelivered && !isCancelled && (
-              <div className={cn(
-                "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium",
-                isConnected ? "bg-green-500/10 text-green-600" : "bg-yellow-500/10 text-yellow-600"
-              )}>
+            {!isDelivered && !isCancelled && <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium", isConnected ? "bg-green-500/10 text-green-600" : "bg-yellow-500/10 text-yellow-600")}>
                 {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
                 <span>{isConnected ? "Live" : "..."}</span>
-              </div>
-            )}
+              </div>}
           </div>
         </div>
 
         {/* Mobile Map Section */}
-        {!isDelivered && !isCancelled ? (
-          <div className="relative h-[35vh] min-h-[200px]">
-            <MockMapWithTiles
-              restaurantLocation={{ lat: 12.9352, lng: 77.6245 }}
-              deliveryLocation={deliveryLocation || undefined}
-              deliveryPartnerLocation={effectivePartnerLocation || undefined}
-              restaurantName={order.restaurant_name}
-              deliveryAddress={order.delivery_address}
-              partnerName={partner?.name}
-              orderStatus={order.status}
-              eta={eta}
-              zoom={14}
-            />
+        {!isDelivered && !isCancelled ? <div className="relative h-[35vh] min-h-[200px]">
+            <MockMapWithTiles restaurantLocation={{
+          lat: 12.9352,
+          lng: 77.6245
+        }} deliveryLocation={deliveryLocation || undefined} deliveryPartnerLocation={effectivePartnerLocation || undefined} restaurantName={order.restaurant_name} deliveryAddress={order.delivery_address} partnerName={partner?.name} orderStatus={order.status} eta={eta} zoom={14} />
             
             {/* ETA Badge */}
-            {eta && (
-              <div className="absolute bottom-3 left-3 right-3">
+            {eta && <div className="absolute bottom-3 left-3 right-3">
                 <div className="bg-card/95 backdrop-blur-md rounded-2xl p-3 shadow-lg border border-border/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -194,50 +213,34 @@ const OrderTrackingPage: React.FC = () => {
                         <p className="text-xs text-muted-foreground">{eta.distance} away</p>
                       </div>
                     </div>
-                    {partner && (
-                      <a href={`tel:${partner.phone}`}>
+                    {partner && <a href={`tel:${partner.phone}`}>
                         <Button size="sm" className="rounded-full h-10 w-10 p-0">
                           <Phone className="w-4 h-4" />
                         </Button>
-                      </a>
-                    )}
+                      </a>}
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className={cn(
-            "py-8 flex flex-col items-center justify-center",
-            isDelivered ? "bg-gradient-to-r from-primary to-accent" : "bg-gradient-to-r from-destructive to-destructive/80"
-          )}>
-            {isDelivered ? (
-              <>
+              </div>}
+          </div> : <div className={cn("py-8 flex flex-col items-center justify-center", isDelivered ? "bg-gradient-to-r from-primary to-accent" : "bg-gradient-to-r from-destructive to-destructive/80")}>
+            {isDelivered ? <>
                 <CheckCircle2 className="w-12 h-12 text-white mb-2" />
                 <p className="text-lg font-bold text-white">Delivered Successfully!</p>
-              </>
-            ) : (
-              <>
+              </> : <>
                 <XCircle className="w-12 h-12 text-white mb-2" />
                 <p className="text-lg font-bold text-white">Order Cancelled</p>
-              </>
-            )}
-          </div>
-        )}
+              </>}
+          </div>}
 
         {/* Mobile Content */}
         <div className="px-4 py-4 space-y-4">
           {/* Delivery Partner - Mobile */}
-          {partner && !isDelivered && !isCancelled && (
-            <div className="bg-card rounded-2xl p-4 shadow-sm border border-border/50">
+          {partner && !isDelivered && !isCancelled && <div className="bg-card rounded-2xl p-4 shadow-sm border border-border/50">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center text-2xl">
                     🛵
                   </div>
-                  {isConnected && (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card" />
-                  )}
+                  {isConnected && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-foreground truncate">{partner.name}</p>
@@ -254,20 +257,13 @@ const OrderTrackingPage: React.FC = () => {
                       <Phone className="w-4 h-4" />
                     </Button>
                   </a>
-                  <OrderChat 
-                    orderId={orderId || ""} 
-                    senderType="customer" 
-                    partnerName={partner.name}
-                    className="w-9 h-9"
-                  />
+                  <OrderChat orderId={orderId || ""} senderType="customer" partnerName={partner.name} className="w-9 h-9" />
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
 
           {/* Progress Steps - Mobile (Horizontal) */}
-          {!isCancelled && (
-            <div className="bg-card rounded-2xl p-4 shadow-sm border border-border/50">
+          {!isCancelled && <div className="bg-card rounded-2xl p-4 shadow-sm border border-border/50">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-foreground">Order Status</span>
                 <span className="text-xs text-primary font-semibold">{Math.round(progressPercentage)}%</span>
@@ -277,33 +273,20 @@ const OrderTrackingPage: React.FC = () => {
               {/* Compact Timeline */}
               <div className="flex justify-between">
                 {statusSteps.slice(0, 4).map((step, index) => {
-                  const isCompleted = index <= Math.min(currentStatusIndex, 3);
-                  const isCurrent = index === Math.min(currentStatusIndex, 3);
-                  const Icon = step.icon;
-
-                  return (
-                    <div key={step.status} className="flex flex-col items-center flex-1">
-                      <div className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                        isCompleted 
-                          ? "bg-primary text-white" 
-                          : "bg-muted text-muted-foreground",
-                        isCurrent && "ring-2 ring-primary/30 ring-offset-2"
-                      )}>
+              const isCompleted = index <= Math.min(currentStatusIndex, 3);
+              const isCurrent = index === Math.min(currentStatusIndex, 3);
+              const Icon = step.icon;
+              return <div key={step.status} className="flex flex-col items-center flex-1">
+                      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", isCompleted ? "bg-primary text-white" : "bg-muted text-muted-foreground", isCurrent && "ring-2 ring-primary/30 ring-offset-2")}>
                         <Icon className="w-4 h-4" />
                       </div>
-                      <span className={cn(
-                        "text-[10px] mt-1.5 text-center line-clamp-1",
-                        isCompleted ? "text-foreground font-medium" : "text-muted-foreground"
-                      )}>
+                      <span className={cn("text-[10px] mt-1.5 text-center line-clamp-1", isCompleted ? "text-foreground font-medium" : "text-muted-foreground")}>
                         {step.label.split(' ')[0]}
                       </span>
-                    </div>
-                  );
-                })}
+                    </div>;
+            })}
               </div>
-            </div>
-          )}
+            </div>}
 
           {/* Order Items - Mobile */}
           <div className="bg-card rounded-2xl p-4 shadow-sm border border-border/50">
@@ -315,17 +298,10 @@ const OrderTrackingPage: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              {orderItems?.slice(0, 3).map((item) => (
-                <div key={item.id} className="flex justify-between items-center">
+              {orderItems?.slice(0, 3).map(item => <div key={item.id} className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "w-2.5 h-2.5 border rounded-sm flex items-center justify-center",
-                      item.is_veg ? "border-green-500" : "border-red-500"
-                    )}>
-                      <div className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        item.is_veg ? "bg-green-500" : "bg-red-500"
-                      )} />
+                    <div className={cn("w-2.5 h-2.5 border rounded-sm flex items-center justify-center", item.is_veg ? "border-green-500" : "border-red-500")}>
+                      <div className={cn("w-1.5 h-1.5 rounded-full", item.is_veg ? "bg-green-500" : "bg-red-500")} />
                     </div>
                     <span className="text-sm text-foreground">
                       {item.quantity}× {item.name}
@@ -334,11 +310,8 @@ const OrderTrackingPage: React.FC = () => {
                   <span className="text-sm font-medium text-foreground">
                     ₹{Number(item.price) * item.quantity}
                   </span>
-                </div>
-              ))}
-              {orderItems && orderItems.length > 3 && (
-                <p className="text-xs text-muted-foreground">+{orderItems.length - 3} more items</p>
-              )}
+                </div>)}
+              {orderItems && orderItems.length > 3 && <p className="text-xs text-muted-foreground">+{orderItems.length - 3} more items</p>}
             </div>
 
             <Separator className="my-3" />
@@ -371,23 +344,12 @@ const OrderTrackingPage: React.FC = () => {
           </Button>
         </div>
 
-        {isAdmin && (
-          <TrackingDebugPanel
-            tracking={tracking}
-            partner={partner}
-            partnerLocation={effectivePartnerLocation}
-            isConnected={isConnected}
-            lastUpdate={lastUpdate}
-            eta={eta}
-          />
-        )}
-      </div>
-    );
+        {isAdmin && <TrackingDebugPanel tracking={tracking} partner={partner} partnerLocation={effectivePartnerLocation} isConnected={isConnected} lastUpdate={lastUpdate} eta={eta} />}
+      </div>;
   }
 
   // Desktop Layout
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Desktop Header */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-6 py-4">
@@ -401,15 +363,10 @@ const OrderTrackingPage: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
               </div>
             </div>
-            {!isDelivered && !isCancelled && (
-              <div className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium",
-                isConnected ? "bg-green-500/10 text-green-600" : "bg-yellow-500/10 text-yellow-600"
-              )}>
+            {!isDelivered && !isCancelled && <div className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium", isConnected ? "bg-green-500/10 text-green-600" : "bg-yellow-500/10 text-yellow-600")}>
                 {isConnected ? <Wifi className="w-4 h-4" /> : <RefreshCw className="w-4 h-4 animate-spin" />}
                 <span>{isConnected ? "Live Tracking Active" : "Connecting..."}</span>
-              </div>
-            )}
+              </div>}
           </div>
         </div>
       </div>
@@ -420,23 +377,14 @@ const OrderTrackingPage: React.FC = () => {
           {/* Left Column - Map & Tracking (3/5) */}
           <div className="lg:col-span-3 space-y-6">
             {/* Map Section */}
-            {!isDelivered && !isCancelled ? (
-              <div className="relative rounded-3xl overflow-hidden shadow-xl border border-border/50 h-[450px]">
-                <MockMapWithTiles
-                  restaurantLocation={{ lat: 12.9352, lng: 77.6245 }}
-                  deliveryLocation={deliveryLocation || undefined}
-                  deliveryPartnerLocation={effectivePartnerLocation || undefined}
-                  restaurantName={order.restaurant_name}
-                  deliveryAddress={order.delivery_address}
-                  partnerName={partner?.name}
-                  orderStatus={order.status}
-                  eta={eta}
-                  zoom={15}
-                />
+            {!isDelivered && !isCancelled ? <div className="relative rounded-3xl overflow-hidden shadow-xl border border-border/50 h-[450px]">
+                <MockMapWithTiles restaurantLocation={{
+              lat: 12.9352,
+              lng: 77.6245
+            }} deliveryLocation={deliveryLocation || undefined} deliveryPartnerLocation={effectivePartnerLocation || undefined} restaurantName={order.restaurant_name} deliveryAddress={order.delivery_address} partnerName={partner?.name} orderStatus={order.status} eta={eta} zoom={15} />
                 
                 {/* ETA Overlay */}
-                {eta && (
-                  <div className="absolute bottom-4 left-4 right-4">
+                {eta && <div className="absolute bottom-4 left-4 right-4">
                     <div className="bg-card/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-border/50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -448,58 +396,33 @@ const OrderTrackingPage: React.FC = () => {
                             <p className="text-sm text-muted-foreground">{eta.distance} away • Arriving soon</p>
                           </div>
                         </div>
-                        {partner && (
-                          <div className="flex gap-3">
+                        {partner && <div className="flex gap-3">
                             <a href={`tel:${partner.phone}`}>
                               <Button size="lg" className="rounded-xl gap-2 h-12 px-5">
                                 <Phone className="w-5 h-5" />
                                 Call Driver
                               </Button>
                             </a>
-                          </div>
-                        )}
+                          </div>}
                       </div>
                     </div>
-                  </div>
-                )}
+                  </div>}
 
-                {isAdmin && (
-                  <TrackingDebugPanel
-                    tracking={tracking}
-                    partner={partner}
-                    partnerLocation={effectivePartnerLocation}
-                    isConnected={isConnected}
-                    lastUpdate={lastUpdate}
-                    eta={eta}
-                  />
-                )}
-              </div>
-            ) : (
-              <div className={cn(
-                "rounded-3xl p-12 flex flex-col items-center justify-center",
-                isDelivered 
-                  ? "bg-gradient-to-br from-primary via-primary to-accent" 
-                  : "bg-gradient-to-br from-destructive to-destructive/80"
-              )}>
-                {isDelivered ? (
-                  <>
+                {isAdmin && <TrackingDebugPanel tracking={tracking} partner={partner} partnerLocation={effectivePartnerLocation} isConnected={isConnected} lastUpdate={lastUpdate} eta={eta} />}
+              </div> : <div className={cn("rounded-3xl p-12 flex flex-col items-center justify-center", isDelivered ? "bg-gradient-to-br from-primary via-primary to-accent" : "bg-gradient-to-br from-destructive to-destructive/80")}>
+                {isDelivered ? <>
                     <CheckCircle2 className="w-20 h-20 text-white mb-4" />
                     <p className="text-3xl font-bold text-white">Order Delivered!</p>
                     <p className="text-white/80 mt-2">Thank you for ordering with us</p>
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <XCircle className="w-20 h-20 text-white mb-4" />
                     <p className="text-3xl font-bold text-white">Order Cancelled</p>
                     <p className="text-white/80 mt-2">Your refund will be processed shortly</p>
-                  </>
-                )}
-              </div>
-            )}
+                  </>}
+              </div>}
 
             {/* Progress Timeline - Desktop */}
-            {!isCancelled && (
-              <div className="bg-card rounded-3xl p-6 shadow-lg border border-border/50">
+            {!isCancelled && <div className="bg-card rounded-3xl p-6 shadow-lg border border-border/50">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-bold text-foreground">Order Progress</h2>
                   <div className="flex items-center gap-2">
@@ -512,69 +435,48 @@ const OrderTrackingPage: React.FC = () => {
                 <div className="relative">
                   {/* Progress Line */}
                   <div className="absolute top-5 left-0 right-0 h-0.5 bg-border">
-                    <div 
-                      className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
-                      style={{ width: `${progressPercentage}%` }}
-                    />
+                    <div className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500" style={{
+                  width: `${progressPercentage}%`
+                }} />
                   </div>
 
                   <div className="relative flex justify-between">
                     {statusSteps.map((step, index) => {
-                      const isCompleted = index <= currentStatusIndex;
-                      const isCurrent = index === currentStatusIndex;
-                      const Icon = step.icon;
-
-                      return (
-                        <div key={step.status} className="flex flex-col items-center flex-1">
-                          <div className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all duration-500",
-                            isCompleted 
-                              ? "bg-gradient-to-br from-primary to-accent text-white shadow-lg shadow-primary/30" 
-                              : "bg-muted text-muted-foreground",
-                            isCurrent && "ring-4 ring-primary/20 scale-110"
-                          )}>
+                  const isCompleted = index <= currentStatusIndex;
+                  const isCurrent = index === currentStatusIndex;
+                  const Icon = step.icon;
+                  return <div key={step.status} className="flex flex-col items-center flex-1">
+                          <div className={cn("w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all duration-500", isCompleted ? "bg-gradient-to-br from-primary to-accent text-white shadow-lg shadow-primary/30" : "bg-muted text-muted-foreground", isCurrent && "ring-4 ring-primary/20 scale-110")}>
                             <Icon className="w-5 h-5" />
                           </div>
                           <div className="mt-3 text-center">
-                            <p className={cn(
-                              "text-sm font-semibold transition-colors",
-                              isCompleted ? "text-foreground" : "text-muted-foreground"
-                            )}>
+                            <p className={cn("text-sm font-semibold transition-colors", isCompleted ? "text-foreground" : "text-muted-foreground")}>
                               {step.label}
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5 hidden xl:block">
                               {step.description}
                             </p>
                           </div>
-                        </div>
-                      );
-                    })}
+                        </div>;
+                })}
                   </div>
                 </div>
 
-                {tracking?.status_message && (
-                  <div className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/10">
-                    <p className="text-sm text-primary font-medium">{tracking.status_message}</p>
-                  </div>
-                )}
-              </div>
-            )}
+                {tracking?.status_message}
+              </div>}
           </div>
 
           {/* Right Column - Order Details (2/5) */}
           <div className="lg:col-span-2 space-y-6">
             {/* Delivery Partner */}
-            {partner && !isDelivered && !isCancelled && (
-              <div className="bg-card rounded-3xl p-5 shadow-lg border border-border/50">
+            {partner && !isDelivered && !isCancelled && <div className="bg-card rounded-3xl p-5 shadow-lg border border-border/50">
                 <h3 className="font-semibold text-foreground mb-4">Delivery Partner</h3>
                 <div className="flex items-center gap-4">
                   <div className="relative">
                     <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl flex items-center justify-center text-3xl">
                       🛵
                     </div>
-                    {isConnected && (
-                      <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-card animate-pulse" />
-                    )}
+                    {isConnected && <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-card animate-pulse" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-lg text-foreground">{partner.name}</p>
@@ -595,16 +497,10 @@ const OrderTrackingPage: React.FC = () => {
                     </Button>
                   </a>
                   <div className="flex-1">
-                    <OrderChat 
-                      orderId={orderId || ""} 
-                      senderType="customer" 
-                      partnerName={partner.name}
-                      className="w-full rounded-xl h-10"
-                    />
+                    <OrderChat orderId={orderId || ""} senderType="customer" partnerName={partner.name} className="w-full rounded-xl h-10" />
                   </div>
                 </div>
-              </div>
-            )}
+              </div>}
 
             {/* Order Summary */}
             <div className="bg-card rounded-3xl p-5 shadow-lg border border-border/50">
@@ -627,17 +523,10 @@ const OrderTrackingPage: React.FC = () => {
 
               {/* Items */}
               <div className="space-y-2 mb-4">
-                {orderItems?.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center py-2">
+                {orderItems?.map(item => <div key={item.id} className="flex justify-between items-center py-2">
                     <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-3 h-3 border-2 rounded-sm flex items-center justify-center",
-                        item.is_veg ? "border-green-500" : "border-red-500"
-                      )}>
-                        <div className={cn(
-                          "w-1.5 h-1.5 rounded-full",
-                          item.is_veg ? "bg-green-500" : "bg-red-500"
-                        )} />
+                      <div className={cn("w-3 h-3 border-2 rounded-sm flex items-center justify-center", item.is_veg ? "border-green-500" : "border-red-500")}>
+                        <div className={cn("w-1.5 h-1.5 rounded-full", item.is_veg ? "bg-green-500" : "bg-red-500")} />
                       </div>
                       <span className="text-sm text-foreground">
                         {item.name} <span className="text-muted-foreground">× {item.quantity}</span>
@@ -646,8 +535,7 @@ const OrderTrackingPage: React.FC = () => {
                     <span className="text-sm font-medium text-foreground">
                       ₹{Number(item.price) * item.quantity}
                     </span>
-                  </div>
-                ))}
+                  </div>)}
               </div>
 
               <Separator className="my-4" />
@@ -697,8 +585,6 @@ const OrderTrackingPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default OrderTrackingPage;
