@@ -22,10 +22,10 @@ export const useLiveLocation = (options: UseLiveLocationOptions = {}) => {
   const [error, setError] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState(true);
 
-  // Default location: Koramangala, Bangalore
+  // Default location: Vellore district, Tamil Nadu
   const defaultLocation: Location = {
-    lat: 12.9352,
-    lng: 77.6245,
+    lat: 12.9165,
+    lng: 79.1325,
   };
 
   const {
