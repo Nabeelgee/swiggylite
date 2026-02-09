@@ -462,9 +462,7 @@ const OrderTrackingPage: React.FC = () => {
                   </div>
                 </div>
 
-                {tracking?.status_message && <div className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/10">
-                    
-                  </div>}
+                {tracking?.status_message}
               </div>}
           </div>
 
