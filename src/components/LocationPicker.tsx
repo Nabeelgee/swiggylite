@@ -56,8 +56,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [open, setOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  // Default to Vellore district, Tamil Nadu
   const [position, setPosition] = useState<[number, number]>(
-    initialLocation ? [initialLocation.lat, initialLocation.lng] : [12.9716, 77.5946]
+    initialLocation ? [initialLocation.lat, initialLocation.lng] : [12.9165, 79.1325]
   );
   const [address, setAddress] = useState("");
   const [isLocating, setIsLocating] = useState(false);
